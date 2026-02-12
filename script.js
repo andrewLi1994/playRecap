@@ -191,6 +191,24 @@ function updateMediaSession() {
         navigator.mediaSession.setActionHandler('nexttrack', () => {
             player.nextVideo();
         });
+
+        // Seek Handlers
+        navigator.mediaSession.setActionHandler('seekto', (details) => {
+            if (details.seekTime && !isNaN(details.seekTime)) {
+                player.seekTo(details.seekTime, true);
+            }
+        });
+        navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+            const skipTime = details.seekOffset || 10;
+            const currentTime = player.getCurrentTime();
+            player.seekTo(Math.max(currentTime - skipTime, 0), true);
+        });
+        navigator.mediaSession.setActionHandler('seekforward', (details) => {
+            const skipTime = details.seekOffset || 10;
+            const currentTime = player.getCurrentTime();
+            const duration = player.getDuration();
+            player.seekTo(Math.min(currentTime + skipTime, duration), true);
+        });
     }
 }
 
