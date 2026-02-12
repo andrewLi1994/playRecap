@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sleep Audio Player</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Player Container -->
+        <div class="video-wrapper">
+            <div id="player"></div>
+        </div>
+
+        <!-- Controls / Info -->
+        <div class="controls">
+            <h2 id="video-title">Loading...</h2>
+            <div class="status-indicator">
+                <span id="status-text">Ready</span>
+            </div>
+            
+            <div class="playback-controls">
+                <button id="prev-btn" class="control-btn">⏮</button>
+                <button id="play-pause-btn" class="control-btn">▶</button>
+                <button id="next-btn" class="control-btn">⏭</button>
+            </div>
+            
+            <div class="info-log">
+                <p id="save-status">Last saved: Never</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>

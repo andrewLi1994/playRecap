@@ -1,0 +1,95 @@
+:root {
+    --bg-color: #000000;
+    --text-color: #e0e0e0;
+    --accent-color: #bb86fc;
+    --secondary-bg: #1e1e1e;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Prevent scrolling if not needed */
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.video-wrapper {
+    width: 100%;
+    max-width: 600px;
+    aspect-ratio: 16 / 9;
+    background-color: #000;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    /* In a real "audio only" mode we might hide this, but YouTube TOS requires the player to be visible. 
+       We keep it visible but maybe dimmed or small. */
+}
+
+#player {
+    width: 100%;
+    height: 100%;
+}
+
+.controls {
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+}
+
+#video-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.status-indicator {
+    font-size: 0.9rem;
+    color: #888;
+    margin-bottom: 30px;
+}
+
+.playback-controls {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 20px;
+}
+
+.control-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 2.5rem;
+    cursor: pointer;
+    touch-action: manipulation; /* Improves touch response */
+    transition: transform 0.1s;
+}
+
+.control-btn:active {
+    transform: scale(0.9);
+    color: var(--accent-color);
+}
+
+.info-log {
+    font-size: 0.8rem;
+    color: #555;
+    margin-top: 20px;
+}
