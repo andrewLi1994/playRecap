@@ -16,6 +16,7 @@ const playPauseBtn = document.getElementById('play-pause-btn');
 const prevBtn = document.getElementById('prev-btn');
 const nextBtn = document.getElementById('next-btn');
 const saveStatusEl = document.getElementById('save-status');
+const silentPlayer = document.getElementById('ios-silent-player');
 
 // --- 1. YouTube API Initialization ---
 function onYouTubeIframeAPIReady() {
@@ -86,6 +87,9 @@ function onPlayerStateChange(event) {
         // Update Playlist UI
         const index = player.getPlaylistIndex();
         highlightActiveItem(index);
+
+        // iOS Hack: Keep silent audio playing to maintain session
+        if (silentPlayer) silentPlayer.play().catch(e => console.log("Silent play failed", e));
 
     } else if (event.data == YT.PlayerState.ENDED) {
         statusTextEl.textContent = "Playback Ended";
@@ -185,9 +189,11 @@ function updateMediaSession() {
         });
 
         navigator.mediaSession.setActionHandler('play', () => {
+            if (silentPlayer) silentPlayer.play().catch(e => console.error(e));
             player.playVideo();
         });
         navigator.mediaSession.setActionHandler('pause', () => {
+            if (silentPlayer) silentPlayer.pause();
             player.pauseVideo();
         });
         navigator.mediaSession.setActionHandler('previoustrack', () => {

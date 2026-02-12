@@ -47,6 +47,13 @@
         </div>
     </div>
 
+    <!-- Silent Audio Hack for iOS Background Play -->
+    <!-- 1 second of silence -->
+    <audio id="ios-silent-player" loop playsinline preload="auto" style="display:none;">
+        <source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"
+            type="audio/wav">
+    </audio>
+
     <script src="script.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
 </body>

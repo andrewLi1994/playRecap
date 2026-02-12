@@ -124,6 +124,8 @@ html {
     display: flex;
     flex-direction: column;
     box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+    padding-bottom: env(safe-area-inset-bottom);
+    /* Fix for iPhone X+ home bar */
 }
 
 .playlist-drawer.open {
