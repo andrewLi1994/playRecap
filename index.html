@@ -35,6 +35,36 @@
             </div>
         </div>
 
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Settings</h2>
+                    <button id="close-settings-btn" class="close-btn">✕</button>
+                </div>
+
+                <div class="setting-group">
+                    <label>Current Playlist</label>
+                    <input type="text" id="playlist-input" placeholder="Paste YouTube Playlist ID or URL">
+                    <button id="load-playlist-btn" class="action-btn">Load Playlist</button>
+                </div>
+
+                <div class="setting-group">
+                    <label>Sleep Timer</label>
+                    <div class="timer-options">
+                        <button class="timer-btn" data-time="15">15m</button>
+                        <button class="timer-btn" data-time="30">30m</button>
+                        <button class="timer-btn" data-time="60">60m</button>
+                        <button class="timer-btn" data-time="0">Off</button>
+                    </div>
+                    <p id="timer-status">Timer: Off</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Float Button for Settings -->
+        <button id="settings-toggle-btn" class="float-btn">⚙️</button>
+
         <!-- Playlist Drawer -->
         <div id="playlist-drawer" class="playlist-drawer">
             <div class="drawer-header">

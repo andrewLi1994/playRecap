@@ -1,12 +1,14 @@
 // Config
-const PLAYLIST_ID = 'PLAgb-eU_m17juOnwmvXoiQjwZi4KehKZs';
-const STORAGE_KEY = 'sleep_audio_player_state';
+// Default to the original playlist if none saved
+let currentPlaylistId = localStorage.getItem('last_playlist_id') || 'PLAgb-eU_m17juOnwmvXoiQjwZi4KehKZs';
+const STORAGE_PREFIX = 'sleep_player_';
 const SAVE_INTERVAL_MS = 5000;
 
 // State
 let player;
 let isReady = false;
 let autoSaveInterval;
+let sleepTimer = null;
 let lastSavedState = loadState();
 
 // DOM Elements
@@ -25,7 +27,7 @@ function onYouTubeIframeAPIReady() {
     // Determine start parameters
     let playerVars = {
         listType: 'playlist',
-        list: PLAYLIST_ID,
+        list: currentPlaylistId,
         playsinline: 1, // Important for iOS to not fullscreen automatically
     };
 
@@ -62,14 +64,14 @@ function onPlayerReady(event) {
 
         // Use loadPlaylist to ensure the playlist context is preserved for auto-next
         player.loadPlaylist({
-            list: PLAYLIST_ID,
+            list: currentPlaylistId,
             listType: 'playlist',
             index: lastSavedState.index,
             startSeconds: lastSavedState.currentTime
         });
     } else {
         // New session, cue playlist
-        player.cuePlaylist({ list: PLAYLIST_ID });
+        player.cuePlaylist({ list: currentPlaylistId });
     }
 
     // Start auto-save loop
@@ -153,7 +155,12 @@ function saveCurrentState() {
                 timestamp: Date.now()
             };
 
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+            // Save with dynamic key based on current playlist
+            localStorage.setItem(STORAGE_PREFIX + currentPlaylistId, JSON.stringify(stateToSave));
+
+            // Also save the "last used playlist"
+            localStorage.setItem('last_playlist_id', currentPlaylistId);
+
             lastSavedState = stateToSave;
             updateSaveStatus(`Saved at ${formatTime(currentTime)}`);
         }
@@ -161,7 +168,7 @@ function saveCurrentState() {
 }
 
 function loadState() {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_PREFIX + currentPlaylistId);
     if (raw) {
         try {
             return JSON.parse(raw);
@@ -239,15 +246,28 @@ function formatTime(seconds) {
 
 // --- 6. Playlist UI Logic ---
 
-const TOTAL_EPISODES = 150; // Hardcoded based on user info
+// Note: TOTAL_EPISODES is tricky with dynamic playlists.
+// Ideally, we'd fetch the length. For now, we'll assume a standard size or try to detect.
+let totalVideos = 150;
+
 const playlistDrawer = document.getElementById('playlist-drawer');
 const playlistItemsContainer = document.getElementById('playlist-items');
 const playlistToggleBtn = document.getElementById('playlist-toggle-btn');
 const closeDrawerBtn = document.getElementById('close-drawer-btn');
 
+// Settings UI
+const settingsModal = document.getElementById('settings-modal');
+const settingsToggleBtn = document.getElementById('settings-toggle-btn');
+const closeSettingsBtn = document.getElementById('close-settings-btn');
+const playlistInput = document.getElementById('playlist-input');
+const loadPlaylistBtn = document.getElementById('load-playlist-btn');
+const timerBtns = document.querySelectorAll('.timer-btn');
+const timerStatusEl = document.getElementById('timer-status');
+
 // Initialize UI
 renderPlaylist();
 
+// Event Listeners for UI
 playlistToggleBtn.addEventListener('click', () => {
     playlistDrawer.classList.add('open');
     scrollToActiveItem();
@@ -257,19 +277,103 @@ closeDrawerBtn.addEventListener('click', () => {
     playlistDrawer.classList.remove('open');
 });
 
+settingsToggleBtn.addEventListener('click', () => {
+    settingsModal.classList.add('visible');
+    playlistInput.value = currentPlaylistId;
+});
+
+closeSettingsBtn.addEventListener('click', () => {
+    settingsModal.classList.remove('visible');
+});
+
+loadPlaylistBtn.addEventListener('click', () => {
+    const input = playlistInput.value.trim();
+    let newId = input;
+
+    // Extract ID if URL is pasted
+    if (input.includes('list=')) {
+        newId = input.split('list=')[1].split('&')[0];
+    }
+
+    if (newId && newId !== currentPlaylistId) {
+        switchPlaylist(newId);
+        settingsModal.classList.remove('visible');
+    }
+});
+
+timerBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const mins = parseInt(btn.dataset.time);
+        setSleepTimer(mins);
+
+        // Update UI
+        timerBtns.forEach(b => b.classList.remove('active'));
+        if (mins > 0) btn.classList.add('active');
+    });
+});
+
+function switchPlaylist(newId) {
+    console.log("Switching playlist to:", newId);
+    currentPlaylistId = newId;
+    localStorage.setItem('last_playlist_id', newId);
+
+    // Reset state loading logic to look for the new key
+    lastSavedState = loadState();
+
+    // Create new player (or re-cue)
+    // Simplest way is to re-cue if player exists
+    if (player && player.cuePlaylist) {
+        if (lastSavedState && lastSavedState.index !== undefined) {
+            player.loadPlaylist({
+                list: currentPlaylistId,
+                listType: 'playlist',
+                index: lastSavedState.index,
+                startSeconds: lastSavedState.currentTime
+            });
+        } else {
+            player.loadPlaylist({
+                list: newId,
+                listType: 'playlist'
+            });
+        }
+        statusTextEl.textContent = "Playlist Loaded";
+        titleEl.textContent = "Loading new book...";
+        renderPlaylist(); // Re-render generic items (would be better with real titles)
+    } else {
+        location.reload(); // Fallback if player state is weird
+    }
+}
+
+function setSleepTimer(minutes) {
+    if (sleepTimer) clearTimeout(sleepTimer);
+
+    if (minutes === 0) {
+        timerStatusEl.textContent = "Timer: Off";
+        return;
+    }
+
+    timerStatusEl.textContent = `Timer: Pausing in ${minutes}m`;
+
+    sleepTimer = setTimeout(() => {
+        if (player) {
+            player.pauseVideo();
+            timerStatusEl.textContent = "Timer: Ended (Paused)";
+            timerBtns.forEach(b => b.classList.remove('active')); // Reset UI
+        }
+    }, minutes * 60 * 1000);
+}
+
 function renderPlaylist() {
     playlistItemsContainer.innerHTML = '';
 
     // We don't have titles, so we generate generic ones.
-    // However, if we've played them, we might have cached titles (future improvement)
-
-    for (let i = 0; i < TOTAL_EPISODES; i++) {
+    for (let i = 0; i < totalVideos; i++) {
         const item = document.createElement('div');
         item.className = 'playlist-item';
         item.dataset.index = i;
         item.innerHTML = `
             <span class="playlist-item-index">${i + 1}</span>
-            <span class="playlist-item-title">Episode ${i + 1} (Click to Play)</span>
+            <span class="playlist-item-title">Episode ${i + 1}</span>
         `;
 
         item.addEventListener('click', () => {
@@ -282,7 +386,7 @@ function renderPlaylist() {
 }
 
 function playIndex(index) {
-    if (player && index >= 0 && index < TOTAL_EPISODES) {
+    if (player && index >= 0) { // Removed strict upper bound check as dynamic lists vary
         player.playVideoAt(index);
     }
 }
