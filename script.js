@@ -90,6 +90,14 @@ function onPlayerStateChange(event) {
         const index = player.getPlaylistIndex();
         highlightActiveItem(index);
 
+        // Dynamically update playlist length & re-render if needed
+        const playlist = player.getPlaylist();
+        if (playlist && playlist.length !== totalVideos) {
+            totalVideos = playlist.length;
+            renderPlaylist();
+            highlightActiveItem(index); // re-highlight after re-render
+        }
+
         // iOS Hack: Keep silent audio playing to maintain session
         if (silentPlayer) silentPlayer.play().catch(e => console.log("Silent play failed", e));
 
@@ -97,23 +105,37 @@ function onPlayerStateChange(event) {
         isSwitching = false;
 
     } else if (event.data == YT.PlayerState.ENDED) {
+        playPauseBtn.textContent = "▶";
         statusTextEl.textContent = "Playback Ended";
-        // Attempt to go to next video if it doesn't happen automatically
-        // (Though loadPlaylist usually handles this)
-        // player.nextVideo(); 
-    } else {
+    } else if (event.data == YT.PlayerState.BUFFERING) {
+        statusTextEl.textContent = "Buffering...";
+    } else if (event.data == YT.PlayerState.CUED) {
+        playPauseBtn.textContent = "▶";
+        statusTextEl.textContent = "Ready";
+        isSwitching = false; // Also reset here as cued means playlist loaded
+
+        // Update playlist length on cue as well
+        const playlist = player.getPlaylist();
+        if (playlist && playlist.length !== totalVideos) {
+            totalVideos = playlist.length;
+            renderPlaylist();
+        }
+    } else if (event.data == YT.PlayerState.PAUSED) {
         playPauseBtn.textContent = "▶";
         statusTextEl.textContent = "Paused";
-        // Force save on pause (e.g. headphones unplugged)
-        if (event.data == YT.PlayerState.PAUSED) {
-            saveCurrentState();
-        }
+        saveCurrentState();
+    } else {
+        // UNSTARTED (-1) or unknown
+        playPauseBtn.textContent = "▶";
+        statusTextEl.textContent = "Not Started";
     }
 }
 
 function onPlayerError(event) {
     console.error("Player Error:", event.data);
     statusTextEl.textContent = "Error occurred. Try reloading.";
+    // Reset switching flag so saveCurrentState is not permanently blocked
+    isSwitching = false;
 }
 
 // --- 2. Action Logic ---
@@ -401,8 +423,8 @@ function renderLibrary() {
         item.querySelector('.library-item-content').addEventListener('click', () => {
             if (book.id !== currentPlaylistId) {
                 switchPlaylist(book.id);
+                renderLibrary(); // Update UI before closing to reflect new "Now Playing"
                 closeSheet();
-                renderLibrary();
             }
         });
 
@@ -445,14 +467,37 @@ function switchPlaylist(newId) {
                 startSeconds: lastSavedState.currentTime
             });
         } else {
-            player.loadPlaylist({
+            player.cuePlaylist({
                 list: newId,
                 listType: 'playlist'
             });
+            // Auto-play after cue (with delay to ensure API processes cue)
+            setTimeout(() => {
+                if (player && typeof player.playVideo === 'function') {
+                    player.playVideo();
+                }
+            }, 500);
         }
         statusTextEl.textContent = "Loading Playlist...";
         titleEl.textContent = "Please wait...";
+
+        // Reset totalVideos; will be updated dynamically when playlist loads
+        totalVideos = 0;
+
+        // Force stop to clear previous video state and prevent data pollution
+        if (player && typeof player.stopVideo === 'function') {
+            player.stopVideo();
+        }
+
         renderPlaylist();
+
+        // Safety timeout: reset isSwitching after 15s in case playlist never loads
+        setTimeout(() => {
+            if (isSwitching) {
+                console.warn("switchPlaylist timeout: resetting isSwitching flag");
+                isSwitching = false;
+            }
+        }, 15000);
     } else {
         location.reload();
     }
@@ -523,7 +568,3 @@ function scrollToActiveItem() {
     }
 }
 
-// Hook into state change to update highlight
-const originalOnPlayerStateChange = onPlayerStateChange;
-// We already update UI in onPlayerStateChange, let's just add the hook there inside the function
-// to avoid redefining. I'll modify existing onPlayerStateChange instead.
