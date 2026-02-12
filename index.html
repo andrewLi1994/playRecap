@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sleep Audio Player</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div class="container">
         <!-- Player Container -->
@@ -19,15 +21,28 @@
             <div class="status-indicator">
                 <span id="status-text">Ready</span>
             </div>
-            
+
             <div class="playback-controls">
                 <button id="prev-btn" class="control-btn">⏮</button>
                 <button id="play-pause-btn" class="control-btn">▶</button>
                 <button id="next-btn" class="control-btn">⏭</button>
             </div>
-            
+
+            <button id="playlist-toggle-btn" class="playlist-btn">📑 Playlist</button>
+
             <div class="info-log">
                 <p id="save-status">Last saved: Never</p>
+            </div>
+        </div>
+
+        <!-- Playlist Drawer -->
+        <div id="playlist-drawer" class="playlist-drawer">
+            <div class="drawer-header">
+                <h2>Episodes</h2>
+                <button id="close-drawer-btn">✕</button>
+            </div>
+            <div id="playlist-items" class="playlist-items">
+                <!-- Items injected via JS -->
             </div>
         </div>
     </div>
@@ -35,4 +50,5 @@
     <script src="script.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
 </body>
+
 </html>

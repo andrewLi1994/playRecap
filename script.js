@@ -82,6 +82,11 @@ function onPlayerStateChange(event) {
         statusTextEl.textContent = "Playing";
         updateVideoTitle();
         updateMediaSession(); // Update lock screen info
+
+        // Update Playlist UI
+        const index = player.getPlaylistIndex();
+        highlightActiveItem(index);
+
     } else if (event.data == YT.PlayerState.ENDED) {
         statusTextEl.textContent = "Playback Ended";
         // Attempt to go to next video if it doesn't happen automatically
@@ -225,3 +230,76 @@ function formatTime(seconds) {
     const sec = Math.floor(seconds % 60);
     return `${min}:${sec < 10 ? '0' : ''}${sec}`;
 }
+
+// --- 6. Playlist UI Logic ---
+
+const TOTAL_EPISODES = 150; // Hardcoded based on user info
+const playlistDrawer = document.getElementById('playlist-drawer');
+const playlistItemsContainer = document.getElementById('playlist-items');
+const playlistToggleBtn = document.getElementById('playlist-toggle-btn');
+const closeDrawerBtn = document.getElementById('close-drawer-btn');
+
+// Initialize UI
+renderPlaylist();
+
+playlistToggleBtn.addEventListener('click', () => {
+    playlistDrawer.classList.add('open');
+    scrollToActiveItem();
+});
+
+closeDrawerBtn.addEventListener('click', () => {
+    playlistDrawer.classList.remove('open');
+});
+
+function renderPlaylist() {
+    playlistItemsContainer.innerHTML = '';
+
+    // We don't have titles, so we generate generic ones.
+    // However, if we've played them, we might have cached titles (future improvement)
+
+    for (let i = 0; i < TOTAL_EPISODES; i++) {
+        const item = document.createElement('div');
+        item.className = 'playlist-item';
+        item.dataset.index = i;
+        item.innerHTML = `
+            <span class="playlist-item-index">${i + 1}</span>
+            <span class="playlist-item-title">Episode ${i + 1} (Click to Play)</span>
+        `;
+
+        item.addEventListener('click', () => {
+            playIndex(i);
+            playlistDrawer.classList.remove('open');
+        });
+
+        playlistItemsContainer.appendChild(item);
+    }
+}
+
+function playIndex(index) {
+    if (player && index >= 0 && index < TOTAL_EPISODES) {
+        player.playVideoAt(index);
+    }
+}
+
+function highlightActiveItem(index) {
+    // Remove active class from all
+    document.querySelectorAll('.playlist-item').forEach(el => el.classList.remove('active'));
+
+    // Add to current
+    const activeItem = playlistItemsContainer.children[index];
+    if (activeItem) {
+        activeItem.classList.add('active');
+    }
+}
+
+function scrollToActiveItem() {
+    const activeItem = document.querySelector('.playlist-item.active');
+    if (activeItem) {
+        activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+// Hook into state change to update highlight
+const originalOnPlayerStateChange = onPlayerStateChange;
+// We already update UI in onPlayerStateChange, let's just add the hook there inside the function
+// to avoid redefining. I'll modify existing onPlayerStateChange instead.
