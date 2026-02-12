@@ -20,7 +20,7 @@ const saveStatusEl = document.getElementById('save-status');
 // --- 1. YouTube API Initialization ---
 function onYouTubeIframeAPIReady() {
     console.log("API Ready");
-    
+
     // Determine start parameters
     let playerVars = {
         listType: 'playlist',
@@ -31,7 +31,7 @@ function onYouTubeIframeAPIReady() {
     // If we have a saved state, we might try to start there,
     // but the API is tricky with playlists + start time on init.
     // Strategy: Init player, wait for ready, then seek/cue.
-    
+
     player = new YT.Player('player', {
         height: '100%',
         width: '100%',
@@ -58,22 +58,22 @@ function onPlayerReady(event) {
     if (lastSavedState && lastSavedState.videoId) {
         console.log("Restoring state:", lastSavedState);
         statusTextEl.textContent = "Resuming session...";
-        
+
         // This is the prompt way: queue the specific video from the playlist
         // Note: loadVideoById with list argument keeps the playlist context
         player.loadVideoById({
             videoId: lastSavedState.videoId,
             startSeconds: lastSavedState.currentTime,
             list: PLAYLIST_ID,
-            listType: 'playlist', 
+            listType: 'playlist',
             // index: lastSavedState.index // Optional, if we tracked it accurately
         });
-        
+
         // Auto-play is restricted on some mobile browsers without user interaction.
         // If it fails, the user will just hit play.
     } else {
         // New session, cue playlist
-        player.cuePlaylist({list: PLAYLIST_ID});
+        player.cuePlaylist({ list: PLAYLIST_ID });
     }
 
     // Start auto-save loop
@@ -86,6 +86,7 @@ function onPlayerStateChange(event) {
         playPauseBtn.textContent = "⏸";
         statusTextEl.textContent = "Playing";
         updateVideoTitle();
+        updateMediaSession(); // Update lock screen info
     } else {
         playPauseBtn.textContent = "▶";
         statusTextEl.textContent = "Paused";
@@ -142,7 +143,7 @@ function saveCurrentState() {
                 index: playlistIndex,
                 timestamp: Date.now()
             };
-            
+
             localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
             lastSavedState = stateToSave;
             updateSaveStatus(`Saved at ${formatTime(currentTime)}`);
@@ -163,7 +164,37 @@ function loadState() {
     return null;
 }
 
-// --- 4. Utilities ---
+// --- 4. Media Session API (Lock Screen Controls) ---
+
+function updateMediaSession() {
+    if ('mediaSession' in navigator && player) {
+        const videoData = player.getVideoData();
+        if (!videoData) return;
+
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: videoData.title || 'Sleep Audio',
+            artist: videoData.author || 'YouTube',
+            artwork: [
+                { src: `https://img.youtube.com/vi/${videoData.video_id}/mqdefault.jpg`, sizes: '320x180', type: 'image/jpeg' }
+            ]
+        });
+
+        navigator.mediaSession.setActionHandler('play', () => {
+            player.playVideo();
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+            player.pauseVideo();
+        });
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+            player.previousVideo();
+        });
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+            player.nextVideo();
+        });
+    }
+}
+
+// --- 5. Utilities ---
 
 function updateSaveStatus(msg) {
     const now = new Date();
