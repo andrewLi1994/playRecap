@@ -39,14 +39,24 @@
         <div id="settings-modal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>Settings</h2>
+                    <h2>My Library</h2>
                     <button id="close-settings-btn" class="close-btn">✕</button>
                 </div>
 
-                <div class="setting-group">
-                    <label>Current Playlist</label>
-                    <input type="text" id="playlist-input" placeholder="Paste YouTube Playlist ID or URL">
-                    <button id="load-playlist-btn" class="action-btn">Load Playlist</button>
+                <!-- Saved Books List -->
+                <div id="library-list" class="library-list">
+                    <!-- Items injected via JS -->
+                    <div class="empty-state">No books saved yet.</div>
+                </div>
+
+                <!-- Add New Section -->
+                <div class="setting-group add-book-section">
+                    <h3>Add New Book</h3>
+                    <input type="text" id="playlist-input" placeholder="Paste YouTube Playlist URL or ID">
+                    <div class="input-row">
+                        <input type="text" id="playlist-name-input" placeholder="Book Name (e.g. Three Body Problem)">
+                        <button id="add-playlist-btn" class="action-btn">Save</button>
+                    </div>
                 </div>
 
                 <div class="setting-group">

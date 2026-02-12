@@ -95,6 +95,100 @@ html {
     margin-top: 20px;
 }
 
+#timer-status {
+    font-size: 0.8rem;
+    color: var(--accent-color);
+    text-align: right;
+    margin: 0;
+}
+
+/* Library UI */
+.library-list {
+    margin-bottom: 20px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.library-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #333;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.library-item:hover {
+    background: #444;
+}
+
+.library-item.active {
+    border: 1px solid var(--accent-color);
+}
+
+.library-item-content {
+    flex: 1;
+}
+
+.book-title {
+    font-weight: bold;
+    display: block;
+    font-size: 1rem;
+}
+
+.book-id {
+    font-size: 0.7rem;
+    color: #888;
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: #ff5555;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px 10px;
+    margin-left: 10px;
+}
+
+.add-book-section h3 {
+    margin-top: 0;
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+.input-row {
+    display: flex;
+    gap: 10px;
+}
+
+#playlist-name-input {
+    flex: 2;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    background: #000;
+    color: #fff;
+    box-sizing: border-box;
+}
+
+#add-playlist-btn {
+    flex: 1;
+    white-space: nowrap;
+}
+
+.empty-state {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+}
+
 /* Playlist Drawer */
 .playlist-btn {
     background: var(--secondary-bg);

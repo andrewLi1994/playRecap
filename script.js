@@ -260,12 +260,15 @@ const settingsModal = document.getElementById('settings-modal');
 const settingsToggleBtn = document.getElementById('settings-toggle-btn');
 const closeSettingsBtn = document.getElementById('close-settings-btn');
 const playlistInput = document.getElementById('playlist-input');
-const loadPlaylistBtn = document.getElementById('load-playlist-btn');
+const playlistNameInput = document.getElementById('playlist-name-input');
+const addPlaylistBtn = document.getElementById('add-playlist-btn');
+const libraryListContainer = document.getElementById('library-list');
 const timerBtns = document.querySelectorAll('.timer-btn');
 const timerStatusEl = document.getElementById('timer-status');
 
 // Initialize UI
 renderPlaylist();
+renderLibrary();
 
 // Event Listeners for UI
 playlistToggleBtn.addEventListener('click', () => {
@@ -279,27 +282,30 @@ closeDrawerBtn.addEventListener('click', () => {
 
 settingsToggleBtn.addEventListener('click', () => {
     settingsModal.classList.add('visible');
-    playlistInput.value = currentPlaylistId;
+    renderLibrary(); // Refresh list on open
 });
 
 closeSettingsBtn.addEventListener('click', () => {
     settingsModal.classList.remove('visible');
 });
 
-loadPlaylistBtn.addEventListener('click', () => {
-    const input = playlistInput.value.trim();
-    let newId = input;
+addPlaylistBtn.addEventListener('click', () => {
+    const urlOrId = playlistInput.value.trim();
+    const name = playlistNameInput.value.trim() || 'Untitled Book';
 
-    // Extract ID if URL is pasted
-    if (input.includes('list=')) {
-        newId = input.split('list=')[1].split('&')[0];
+    if (!urlOrId) return;
+
+    let newId = urlOrId;
+    if (urlOrId.includes('list=')) {
+        newId = urlOrId.split('list=')[1].split('&')[0];
     }
 
-    if (newId && newId !== currentPlaylistId) {
-        switchPlaylist(newId);
-        settingsModal.classList.remove('visible');
-    }
+    addToLibrary(newId, name);
+    playlistInput.value = '';
+    playlistNameInput.value = '';
+    renderLibrary();
 });
+
 
 timerBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -311,6 +317,77 @@ timerBtns.forEach(btn => {
         if (mins > 0) btn.classList.add('active');
     });
 });
+
+// --- Library Logic ---
+
+function getLibrary() {
+    try {
+        return JSON.parse(localStorage.getItem('my_library') || '[]');
+    } catch {
+        return [];
+    }
+}
+
+function addToLibrary(id, name) {
+    const library = getLibrary();
+    // Check if exists
+    if (!library.find(b => b.id === id)) {
+        library.push({ id, name, addedAt: Date.now() });
+        localStorage.setItem('my_library', JSON.stringify(library));
+    } else {
+        alert('Book already in library!');
+    }
+}
+
+function removeFromLibrary(id) {
+    let library = getLibrary();
+    library = library.filter(b => b.id !== id);
+    localStorage.setItem('my_library', JSON.stringify(library));
+    renderLibrary();
+}
+
+function renderLibrary() {
+    const library = getLibrary();
+    libraryListContainer.innerHTML = '';
+
+    if (library.length === 0) {
+        libraryListContainer.innerHTML = '<div class="empty-state">No books saved yet. Add one below!</div>';
+        return;
+    }
+
+    library.forEach(book => {
+        const item = document.createElement('div');
+        item.className = 'library-item';
+        if (book.id === currentPlaylistId) item.classList.add('active');
+
+        item.innerHTML = `
+            <div class="library-item-content">
+                <span class="book-title">${book.name}</span>
+                <span class="book-id">ID: ${book.id}</span>
+            </div>
+            <button class="delete-btn">🗑</button>
+        `;
+
+        // Click on content -> Switch
+        item.querySelector('.library-item-content').addEventListener('click', () => {
+            if (book.id !== currentPlaylistId) {
+                switchPlaylist(book.id);
+                renderLibrary(); // Re-render to update active state
+            }
+        });
+
+        // Click delete
+        item.querySelector('.delete-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm(`Remove "${book.name}"?`)) {
+                removeFromLibrary(book.id);
+            }
+        });
+
+        libraryListContainer.appendChild(item);
+    });
+}
+
 
 function switchPlaylist(newId) {
     console.log("Switching playlist to:", newId);
