@@ -93,6 +93,9 @@ function onPlayerStateChange(event) {
         // iOS Hack: Keep silent audio playing to maintain session
         if (silentPlayer) silentPlayer.play().catch(e => console.log("Silent play failed", e));
 
+        // Reset switching flag as we are strictly playing the new video now
+        isSwitching = false;
+
     } else if (event.data == YT.PlayerState.ENDED) {
         statusTextEl.textContent = "Playback Ended";
         // Attempt to go to next video if it doesn't happen automatically
@@ -134,10 +137,12 @@ function updateVideoTitle() {
     }
 }
 
+let isSwitching = false;
+
 // --- 3. State Management ---
 
 function saveCurrentState() {
-    if (!isReady || !player) return;
+    if (!isReady || !player || isSwitching) return;
 
     // Only save if playing or paused (avoid buffering/unstarted mess)
     const state = player.getPlayerState();
@@ -391,15 +396,22 @@ function renderLibrary() {
 
 function switchPlaylist(newId) {
     console.log("Switching playlist to:", newId);
+
+    // 1. Save current state of the OLD playlist before switching
+    saveCurrentState();
+
+    // 2. Set switching flag to prevent state corruption during transition
+    isSwitching = true;
+
+    // 3. Update ID
     currentPlaylistId = newId;
     localStorage.setItem('last_playlist_id', newId);
 
-    // Reset state loading logic to look for the new key
+    // 4. Load saved state for the NEW playlist
     lastSavedState = loadState();
 
-    // Create new player (or re-cue)
-    // Simplest way is to re-cue if player exists
-    if (player && player.cuePlaylist) {
+    // 5. Load the new playlist
+    if (player && player.loadPlaylist) {
         if (lastSavedState && lastSavedState.index !== undefined) {
             player.loadPlaylist({
                 list: currentPlaylistId,
@@ -413,11 +425,11 @@ function switchPlaylist(newId) {
                 listType: 'playlist'
             });
         }
-        statusTextEl.textContent = "Playlist Loaded";
-        titleEl.textContent = "Loading new book...";
-        renderPlaylist(); // Re-render generic items (would be better with real titles)
+        statusTextEl.textContent = "Loading Playlist...";
+        titleEl.textContent = "Please wait...";
+        renderPlaylist();
     } else {
-        location.reload(); // Fallback if player state is weird
+        location.reload();
     }
 }
 
