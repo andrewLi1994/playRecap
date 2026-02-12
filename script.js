@@ -260,20 +260,51 @@ const playlistItemsContainer = document.getElementById('playlist-items');
 const playlistToggleBtn = document.getElementById('playlist-toggle-btn');
 const closeDrawerBtn = document.getElementById('close-drawer-btn');
 
-// Settings UI
-const settingsModal = document.getElementById('settings-modal');
+// Settings UI — iOS Bottom Sheet
+const settingsSheet = document.getElementById('settings-sheet');
+const sheetBackdrop = document.getElementById('sheet-backdrop');
 const settingsToggleBtn = document.getElementById('settings-toggle-btn');
-const closeSettingsBtn = document.getElementById('close-settings-btn');
 const playlistInput = document.getElementById('playlist-input');
 const playlistNameInput = document.getElementById('playlist-name-input');
 const addPlaylistBtn = document.getElementById('add-playlist-btn');
 const libraryListContainer = document.getElementById('library-list');
 const timerBtns = document.querySelectorAll('.timer-btn');
 const timerStatusEl = document.getElementById('timer-status');
+const sheetTabs = document.querySelectorAll('.sheet-tab');
 
 // Initialize UI
 renderPlaylist();
 renderLibrary();
+
+// Open / Close Sheet
+function openSheet() {
+    settingsSheet.classList.add('open');
+    sheetBackdrop.classList.add('visible');
+    renderLibrary();
+}
+
+function closeSheet() {
+    settingsSheet.classList.remove('open');
+    sheetBackdrop.classList.remove('visible');
+}
+
+settingsToggleBtn.addEventListener('click', openSheet);
+sheetBackdrop.addEventListener('click', closeSheet);
+
+// Tab Switching
+sheetTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        const targetId = 'tab-' + tab.dataset.tab;
+
+        // Toggle active tab
+        sheetTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        // Toggle bodies
+        document.querySelectorAll('.sheet-body').forEach(body => body.classList.add('hidden'));
+        document.getElementById(targetId).classList.remove('hidden');
+    });
+});
 
 // Event Listeners for UI
 playlistToggleBtn.addEventListener('click', () => {
@@ -283,15 +314,6 @@ playlistToggleBtn.addEventListener('click', () => {
 
 closeDrawerBtn.addEventListener('click', () => {
     playlistDrawer.classList.remove('open');
-});
-
-settingsToggleBtn.addEventListener('click', () => {
-    settingsModal.classList.add('visible');
-    renderLibrary(); // Refresh list on open
-});
-
-closeSettingsBtn.addEventListener('click', () => {
-    settingsModal.classList.remove('visible');
 });
 
 addPlaylistBtn.addEventListener('click', () => {
@@ -311,7 +333,6 @@ addPlaylistBtn.addEventListener('click', () => {
     renderLibrary();
 });
 
-
 timerBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         const mins = parseInt(btn.dataset.time);
@@ -320,6 +341,7 @@ timerBtns.forEach(btn => {
         // Update UI
         timerBtns.forEach(b => b.classList.remove('active'));
         if (mins > 0) btn.classList.add('active');
+        else timerBtns.forEach(b => b.classList.remove('active'));
     });
 });
 
@@ -356,7 +378,7 @@ function renderLibrary() {
     libraryListContainer.innerHTML = '';
 
     if (library.length === 0) {
-        libraryListContainer.innerHTML = '<div class="empty-state">No books saved yet. Add one below!</div>';
+        libraryListContainer.innerHTML = '<div class="empty-state">No saved books yet.<br>Add your first book below!</div>';
         return;
     }
 
@@ -365,19 +387,22 @@ function renderLibrary() {
         item.className = 'library-item';
         if (book.id === currentPlaylistId) item.classList.add('active');
 
+        const isPlaying = book.id === currentPlaylistId;
+
         item.innerHTML = `
             <div class="library-item-content">
                 <span class="book-title">${book.name}</span>
-                <span class="book-id">ID: ${book.id}</span>
+                ${isPlaying ? '<span class="now-playing">▶ Now Playing</span>' : '<span class="book-progress">Tap to play</span>'}
             </div>
-            <button class="delete-btn">🗑</button>
+            <button class="delete-btn">✕</button>
         `;
 
         // Click on content -> Switch
         item.querySelector('.library-item-content').addEventListener('click', () => {
             if (book.id !== currentPlaylistId) {
                 switchPlaylist(book.id);
-                renderLibrary(); // Re-render to update active state
+                closeSheet();
+                renderLibrary();
             }
         });
 

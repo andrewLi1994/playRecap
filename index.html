@@ -35,45 +35,64 @@
             </div>
         </div>
 
-        <!-- Settings Modal -->
-        <div id="settings-modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>My Library</h2>
-                    <button id="close-settings-btn" class="close-btn">✕</button>
+        <!-- iOS-style Bottom Sheet -->
+        <div id="sheet-backdrop" class="sheet-backdrop"></div>
+        <div id="settings-sheet" class="sheet">
+            <div class="sheet-handle"></div>
+
+            <!-- Tabs -->
+            <div class="sheet-tabs">
+                <button class="sheet-tab active" data-tab="library">My Library</button>
+                <button class="sheet-tab" data-tab="timer">Sleep Timer</button>
+            </div>
+
+            <!-- Tab: Library -->
+            <div class="sheet-body" id="tab-library">
+                <div id="library-list" class="ios-list">
+                    <!-- Injected by JS -->
                 </div>
 
-                <!-- Saved Books List -->
-                <div id="library-list" class="library-list">
-                    <!-- Items injected via JS -->
-                    <div class="empty-state">No books saved yet.</div>
-                </div>
-
-                <!-- Add New Section -->
-                <div class="setting-group add-book-section">
-                    <h3>Add New Book</h3>
-                    <input type="text" id="playlist-input" placeholder="Paste YouTube Playlist URL or ID">
-                    <div class="input-row">
-                        <input type="text" id="playlist-name-input" placeholder="Book Name (e.g. Three Body Problem)">
-                        <button id="add-playlist-btn" class="action-btn">Save</button>
+                <div class="ios-section-header">Add New Book</div>
+                <div class="ios-list">
+                    <div class="ios-input-row">
+                        <input type="url" id="playlist-input" placeholder="Paste YouTube Playlist URL">
+                    </div>
+                    <div class="ios-input-row">
+                        <input type="text" id="playlist-name-input" placeholder="Book Name">
+                        <button id="add-playlist-btn" class="ios-action-btn">Add</button>
                     </div>
                 </div>
+            </div>
 
-                <div class="setting-group">
-                    <label>Sleep Timer</label>
-                    <div class="timer-options">
-                        <button class="timer-btn" data-time="15">15m</button>
-                        <button class="timer-btn" data-time="30">30m</button>
-                        <button class="timer-btn" data-time="60">60m</button>
-                        <button class="timer-btn" data-time="0">Off</button>
-                    </div>
-                    <p id="timer-status">Timer: Off</p>
+            <!-- Tab: Timer -->
+            <div class="sheet-body hidden" id="tab-timer">
+                <div class="ios-section-header">Auto Pause</div>
+                <div class="ios-list">
+                    <button class="ios-list-item timer-btn" data-time="15">
+                        <span>15 Minutes</span><span class="checkmark"></span>
+                    </button>
+                    <button class="ios-list-item timer-btn" data-time="30">
+                        <span>30 Minutes</span><span class="checkmark"></span>
+                    </button>
+                    <button class="ios-list-item timer-btn" data-time="45">
+                        <span>45 Minutes</span><span class="checkmark"></span>
+                    </button>
+                    <button class="ios-list-item timer-btn" data-time="60">
+                        <span>1 Hour</span><span class="checkmark"></span>
+                    </button>
+                    <button class="ios-list-item timer-btn" data-time="90">
+                        <span>1.5 Hours</span><span class="checkmark"></span>
+                    </button>
+                    <button class="ios-list-item timer-btn" data-time="0">
+                        <span>Off</span><span class="checkmark"></span>
+                    </button>
                 </div>
+                <p id="timer-status" class="timer-status-text">Timer: Off</p>
             </div>
         </div>
 
         <!-- Float Button for Settings -->
-        <button id="settings-toggle-btn" class="float-btn">⚙️</button>
+        <button id="settings-toggle-btn" class="float-btn">📚</button>
 
         <!-- Playlist Drawer -->
         <div id="playlist-drawer" class="playlist-drawer">
