@@ -55,22 +55,17 @@ function onPlayerReady(event) {
     nextBtn.addEventListener('click', () => player.nextVideo());
 
     // Restore state if exists
-    if (lastSavedState && lastSavedState.videoId) {
+    if (lastSavedState && lastSavedState.index !== undefined) {
         console.log("Restoring state:", lastSavedState);
         statusTextEl.textContent = "Resuming session...";
 
-        // This is the prompt way: queue the specific video from the playlist
-        // Note: loadVideoById with list argument keeps the playlist context
-        player.loadVideoById({
-            videoId: lastSavedState.videoId,
-            startSeconds: lastSavedState.currentTime,
+        // Use loadPlaylist to ensure the playlist context is preserved for auto-next
+        player.loadPlaylist({
             list: PLAYLIST_ID,
             listType: 'playlist',
-            // index: lastSavedState.index // Optional, if we tracked it accurately
+            index: lastSavedState.index,
+            startSeconds: lastSavedState.currentTime
         });
-
-        // Auto-play is restricted on some mobile browsers without user interaction.
-        // If it fails, the user will just hit play.
     } else {
         // New session, cue playlist
         player.cuePlaylist({ list: PLAYLIST_ID });
@@ -87,6 +82,11 @@ function onPlayerStateChange(event) {
         statusTextEl.textContent = "Playing";
         updateVideoTitle();
         updateMediaSession(); // Update lock screen info
+    } else if (event.data == YT.PlayerState.ENDED) {
+        statusTextEl.textContent = "Playback Ended";
+        // Attempt to go to next video if it doesn't happen automatically
+        // (Though loadPlaylist usually handles this)
+        // player.nextVideo(); 
     } else {
         playPauseBtn.textContent = "▶";
         statusTextEl.textContent = "Paused";
