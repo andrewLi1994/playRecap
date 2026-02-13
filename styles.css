@@ -520,5 +520,43 @@ html {
 }
 
 .hidden {
-    display: none;
+    display: none !important;
+}
+
+/* Empty State Card */
+.empty-state-card {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 80%;
+    max-width: 300px;
+    background: var(--secondary-bg);
+    padding: 40px 20px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+
+.empty-state-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.5rem;
+}
+
+.empty-state-card p {
+    color: var(--label-secondary);
+    margin-bottom: 25px;
+    line-height: 1.4;
+}
+
+.ios-action-btn.large {
+    font-size: 1.1rem;
+    padding: 12px 24px;
+    width: 100%;
 }

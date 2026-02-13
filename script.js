@@ -1,6 +1,6 @@
 // Config
-// Default to the original playlist if none saved
-let currentPlaylistId = localStorage.getItem('last_playlist_id') || 'PLAgb-eU_m17juOnwmvXoiQjwZi4KehKZs';
+// Default to null if none saved
+let currentPlaylistId = localStorage.getItem('last_playlist_id') || null;
 const STORAGE_PREFIX = 'sleep_player_';
 const SAVE_INTERVAL_MS = 5000;
 
@@ -19,10 +19,28 @@ const prevBtn = document.getElementById('prev-btn');
 const nextBtn = document.getElementById('next-btn');
 const saveStatusEl = document.getElementById('save-status');
 const silentPlayer = document.getElementById('ios-silent-player');
+const emptyStateContainer = document.getElementById('empty-state-container');
+const playerContainer = document.querySelector('.video-wrapper');
+const controlsContainer = document.querySelector('.controls');
+const emptyAddBtn = document.getElementById('empty-add-btn');
 
 // --- 1. YouTube API Initialization ---
 function onYouTubeIframeAPIReady() {
     console.log("API Ready");
+
+    // If no playlist, just init player without specific vars
+    if (!currentPlaylistId) {
+        player = new YT.Player('player', {
+            height: '100%',
+            width: '100%',
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange,
+                'onError': onPlayerError
+            }
+        });
+        return;
+    }
 
     // Determine start parameters
     let playerVars = {
@@ -30,10 +48,6 @@ function onYouTubeIframeAPIReady() {
         list: currentPlaylistId,
         playsinline: 1, // Important for iOS to not fullscreen automatically
     };
-
-    // If we have a saved state, we might try to start there,
-    // but the API is tricky with playlists + start time on init.
-    // Strategy: Init player, wait for ready, then seek/cue.
 
     player = new YT.Player('player', {
         height: '100%',
@@ -57,6 +71,13 @@ function onPlayerReady(event) {
     prevBtn.addEventListener('click', () => player.previousVideo());
     nextBtn.addEventListener('click', () => player.nextVideo());
 
+    if (!currentPlaylistId) {
+        showEmptyState();
+        return;
+    }
+
+    hideEmptyState();
+
     // Restore state if exists
     if (lastSavedState && lastSavedState.index !== undefined) {
         console.log("Restoring state:", lastSavedState);
@@ -75,7 +96,19 @@ function onPlayerReady(event) {
     }
 
     // Start auto-save loop
+    startAutoSave();
+}
+
+function startAutoSave() {
+    stopAutoSave(); // Ensure no duplicates
     autoSaveInterval = setInterval(saveCurrentState, SAVE_INTERVAL_MS);
+}
+
+function stopAutoSave() {
+    if (autoSaveInterval) {
+        clearInterval(autoSaveInterval);
+        autoSaveInterval = null;
+    }
 }
 
 function onPlayerStateChange(event) {
@@ -103,6 +136,7 @@ function onPlayerStateChange(event) {
 
         // Reset switching flag as we are strictly playing the new video now
         isSwitching = false;
+        startAutoSave(); // Safe to auto-save now
 
     } else if (event.data == YT.PlayerState.ENDED) {
         playPauseBtn.textContent = "▶";
@@ -273,9 +307,8 @@ function formatTime(seconds) {
 
 // --- 6. Playlist UI Logic ---
 
-// Note: TOTAL_EPISODES is tricky with dynamic playlists.
-// Ideally, we'd fetch the length. For now, we'll assume a standard size or try to detect.
-let totalVideos = 150;
+// Playlist length will be dynamically updated
+let totalVideos = 0;
 
 const playlistDrawer = document.getElementById('playlist-drawer');
 const playlistItemsContainer = document.getElementById('playlist-items');
@@ -367,6 +400,31 @@ timerBtns.forEach(btn => {
     });
 });
 
+emptyAddBtn.addEventListener('click', () => {
+    openSheet();
+    // Switch to library tab if not already
+    document.querySelector('.sheet-tab[data-tab="library"]').click();
+});
+
+// Empty State Helpers
+function showEmptyState() {
+    if (playerContainer) playerContainer.style.display = 'none';
+    if (controlsContainer) controlsContainer.style.display = 'none';
+    if (emptyStateContainer) emptyStateContainer.style.display = 'block';
+
+    // Also hide the floating settings button as we have the big add button
+    // Actually keep it or hide it? Let's keep it for consistency or hide it for focus. 
+    // Let's hide it to focus user on the big button.
+    if (settingsToggleBtn) settingsToggleBtn.style.display = 'none';
+}
+
+function hideEmptyState() {
+    if (playerContainer) playerContainer.style.display = 'block';
+    if (controlsContainer) controlsContainer.style.display = 'block';
+    if (emptyStateContainer) emptyStateContainer.style.display = 'none';
+    if (settingsToggleBtn) settingsToggleBtn.style.display = 'flex';
+}
+
 // --- Library Logic ---
 
 function getLibrary() {
@@ -447,8 +505,14 @@ function switchPlaylist(newId) {
     // 1. Save current state of the OLD playlist before switching
     saveCurrentState();
 
+    // Stop auto-save to prevent race conditions during switch
+    stopAutoSave();
+
     // 2. Set switching flag to prevent state corruption during transition
     isSwitching = true;
+
+    // 2.5 Ensure UI is visible (hide empty state)
+    hideEmptyState();
 
     // 3. Update ID
     currentPlaylistId = newId;
@@ -458,37 +522,46 @@ function switchPlaylist(newId) {
     lastSavedState = loadState();
 
     // 5. Load the new playlist
-    if (player && player.loadPlaylist) {
+    if (player && player.cuePlaylist) {
+        console.log("switchPlaylist: Loading new playlist", newId);
+
+        // Reset totalVideos immediately so UI shows loading state
+        totalVideos = 0;
+        renderPlaylist();
+
+        // Check if we need to resume or start fresh
+        let startSeconds = 0;
+        let startIndex = 0;
+
         if (lastSavedState && lastSavedState.index !== undefined) {
-            player.loadPlaylist({
-                list: currentPlaylistId,
-                listType: 'playlist',
-                index: lastSavedState.index,
-                startSeconds: lastSavedState.currentTime
-            });
-        } else {
-            player.cuePlaylist({
-                list: newId,
-                listType: 'playlist'
-            });
-            // Auto-play after cue (with delay to ensure API processes cue)
-            setTimeout(() => {
-                if (player && typeof player.playVideo === 'function') {
-                    player.playVideo();
-                }
-            }, 500);
+            console.log("switchPlaylist: Will resume at index", lastSavedState.index);
+            startIndex = lastSavedState.index;
+            startSeconds = lastSavedState.currentTime;
         }
+
+        // Force stop to clear previous video state
+        player.stopVideo();
+
+        // ALWAYS use cuePlaylist. loadPlaylist is flaky for switching lists.
+        const cueArgs = {
+            list: newId,
+            listType: 'playlist',
+            index: startIndex,
+            startSeconds: startSeconds
+        };
+        console.log("switchPlaylist: calling cuePlaylist with", cueArgs);
+        player.cuePlaylist(cueArgs);
+
+        // We rely on onPlayerStateChange -> CUED to start playing or handle UI
+        // But to be safe, we can try to play after a short delay if it doesn't auto-play
+        setTimeout(() => {
+            const state = player.getPlayerState();
+            if (state === YT.PlayerState.CUED || state === -1) {
+                player.playVideo();
+            }
+        }, 1000);
         statusTextEl.textContent = "Loading Playlist...";
         titleEl.textContent = "Please wait...";
-
-        // Reset totalVideos; will be updated dynamically when playlist loads
-        totalVideos = 0;
-
-        // Force stop to clear previous video state and prevent data pollution
-        if (player && typeof player.stopVideo === 'function') {
-            player.stopVideo();
-        }
-
         renderPlaylist();
 
         // Safety timeout: reset isSwitching after 15s in case playlist never loads
@@ -524,6 +597,11 @@ function setSleepTimer(minutes) {
 
 function renderPlaylist() {
     playlistItemsContainer.innerHTML = '';
+
+    if (totalVideos === 0) {
+        playlistItemsContainer.innerHTML = '<div class="empty-state">Loading episodes...</div>';
+        return;
+    }
 
     // We don't have titles, so we generate generic ones.
     for (let i = 0; i < totalVideos; i++) {
