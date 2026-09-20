@@ -1,562 +1,86 @@
-:root {
-    --bg-color: #000000;
-    --text-color: #e0e0e0;
-    --accent-color: #bb86fc;
-    --secondary-bg: #1c1c1e;
-    --grouped-bg: #2c2c2e;
-    --separator: rgba(84, 84, 88, 0.65);
-    --label-secondary: rgba(235, 235, 245, 0.6);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-body,
-html {
-    margin: 0;
-    padding: 0;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    -webkit-font-smoothing: antialiased;
-}
-
-.container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    box-sizing: border-box;
-}
-
-/* Player */
-.video-wrapper {
-    width: 100%;
-    max-width: 600px;
-    aspect-ratio: 16 / 9;
-    background-color: #000;
-    margin-bottom: 20px;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-}
-
-#player {
-    width: 100%;
-    height: 100%;
-}
-
-/* Controls */
-.controls {
-    text-align: center;
-    width: 100%;
-    max-width: 400px;
-}
-
-#video-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 10px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.status-indicator {
-    font-size: 0.9rem;
-    color: var(--label-secondary);
-    margin-bottom: 30px;
-}
-
-.playback-controls {
-    display: flex;
-    justify-content: center;
-    gap: 30px;
-    margin-bottom: 20px;
-}
-
-.control-btn {
-    background: none;
-    border: none;
-    color: var(--text-color);
-    font-size: 2.5rem;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: transform 0.1s;
-}
-
-.control-btn:active {
-    transform: scale(0.9);
-    color: var(--accent-color);
-}
-
-.info-log {
-    margin-top: 20px;
-}
-
-.info-log p {
-    font-size: 0.8rem;
-    color: var(--label-secondary);
-}
-
-/* Playlist Button */
-.playlist-btn {
-    background: var(--secondary-bg);
-    border: 1px solid #333;
-    color: var(--text-color);
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-size: 1rem;
-    cursor: pointer;
-    margin-bottom: 20px;
-    margin-top: 10px;
-}
-
-/* ========================================
-   iOS-Style Bottom Sheet
-   ======================================== */
-
-.sheet-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 2000;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-}
-
-.sheet-backdrop.visible {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.sheet {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    max-height: 85vh;
-    background: var(--secondary-bg);
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-    z-index: 2001;
-    display: flex;
-    flex-direction: column;
-    transform: translateY(100%);
-    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-    padding-bottom: var(--safe-bottom);
-}
-
-.sheet.open {
-    transform: translateY(0);
-}
-
-.sheet-handle {
-    width: 36px;
-    height: 5px;
-    border-radius: 3px;
-    background: rgba(255, 255, 255, 0.3);
-    margin: 8px auto 4px;
-    flex-shrink: 0;
-}
-
-/* Segmented Tabs (iOS style) */
-.sheet-tabs {
-    display: flex;
-    margin: 8px 16px 12px;
-    background: rgba(118, 118, 128, 0.24);
-    border-radius: 9px;
-    padding: 2px;
-    flex-shrink: 0;
-}
-
-.sheet-tab {
-    flex: 1;
-    padding: 8px 0;
-    border: none;
-    background: transparent;
-    color: var(--text-color);
-    font-size: 0.9rem;
-    font-weight: 500;
-    border-radius: 7px;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.sheet-tab.active {
-    background: rgba(99, 99, 102, 0.65);
-    color: #fff;
-    font-weight: 600;
-}
-
-/* Sheet scrollable body */
-.sheet-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0 16px 20px;
-    -webkit-overflow-scrolling: touch;
-}
-
-.sheet-body.hidden {
-    display: none;
-}
-
-/* iOS Grouped List */
-.ios-list {
-    background: var(--grouped-bg);
-    border-radius: 12px;
-    margin-bottom: 16px;
-    overflow: hidden;
-}
-
-.ios-section-header {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--label-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    padding: 8px 16px 6px;
-    margin-top: 8px;
-}
-
-/* Generic iOS list item */
-.ios-list-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    min-height: 52px;
-    padding: 12px 16px;
-    border: none;
-    background: transparent;
-    color: var(--text-color);
-    font-size: 1.05rem;
-    text-align: left;
-    cursor: pointer;
-    box-sizing: border-box;
-    border-bottom: 0.5px solid var(--separator);
-    -webkit-tap-highlight-color: transparent;
-    transition: background 0.15s;
-}
-
-.ios-list-item:last-child {
-    border-bottom: none;
-}
-
-.ios-list-item:active {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-/* Library Items */
-.library-item {
-    display: flex;
-    align-items: center;
-    min-height: 56px;
-    padding: 12px 16px;
-    border-bottom: 0.5px solid var(--separator);
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: background 0.15s;
-}
-
-.library-item:last-child {
-    border-bottom: none;
-}
-
-.library-item:active {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.library-item.active {
-    background: rgba(187, 134, 252, 0.08);
-}
-
-.library-item-content {
-    flex: 1;
-    min-width: 0;
-}
-
-.book-title {
-    font-size: 1.05rem;
-    font-weight: 500;
-    display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.book-progress {
-    font-size: 0.75rem;
-    color: var(--label-secondary);
-    margin-top: 2px;
-}
-
-.library-item .now-playing {
-    font-size: 0.75rem;
-    color: var(--accent-color);
-    font-weight: 500;
-}
-
-.delete-btn {
-    background: none;
-    border: none;
-    color: #ff453a;
-    font-size: 1.3rem;
-    cursor: pointer;
-    padding: 8px 12px;
-    min-width: 44px;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    -webkit-tap-highlight-color: transparent;
-}
-
-/* Timer Checkmark */
-.checkmark {
-    display: none;
-    color: var(--accent-color);
-    font-weight: bold;
-    font-size: 1.1rem;
-}
-
-.timer-btn.active .checkmark {
-    display: inline;
-}
-
-.timer-btn.active .checkmark::before {
-    content: '✓';
-}
-
-.timer-status-text {
-    text-align: center;
-    color: var(--accent-color);
-    font-size: 0.85rem;
-    padding: 12px 0 0;
-    margin: 0;
-}
-
-/* Input Rows */
-.ios-input-row {
-    display: flex;
-    align-items: center;
-    min-height: 48px;
-    padding: 6px 12px;
-    border-bottom: 0.5px solid var(--separator);
-}
-
-.ios-input-row:last-child {
-    border-bottom: none;
-}
-
-.ios-input-row input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: var(--text-color);
-    font-size: 1rem;
-    padding: 8px 4px;
-    outline: none;
-    font-family: inherit;
-}
-
-.ios-input-row input::placeholder {
-    color: rgba(235, 235, 245, 0.3);
-}
-
-.ios-action-btn {
-    background: var(--accent-color);
-    color: #000;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 18px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    min-height: 36px;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.ios-action-btn:active {
-    opacity: 0.7;
-}
-
-/* Empty State */
-.empty-state {
-    text-align: center;
-    color: var(--label-secondary);
-    padding: 30px 20px;
-    font-size: 0.95rem;
-}
-
-/* Float Button */
-.float-btn {
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    background: rgba(44, 44, 46, 0.85);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
-    border: none;
-    color: #fff;
-    width: 44px;
-    height: 44px;
-    border-radius: 22px;
-    font-size: 1.3rem;
-    cursor: pointer;
-    z-index: 1500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.float-btn:active {
-    transform: scale(0.92);
-}
-
-/* ========================================
-   Playlist Drawer (Episodes)
-   ======================================== */
-.playlist-drawer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 70%;
-    background-color: var(--secondary-bg);
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-    transform: translateY(100%);
-    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
-    padding-bottom: var(--safe-bottom);
-}
-
-.playlist-drawer.open {
-    transform: translateY(0);
-}
-
-.drawer-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    border-bottom: 0.5px solid var(--separator);
-}
-
-.drawer-header h2 {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-#close-drawer-btn {
-    background: none;
-    border: none;
-    color: var(--text-color);
-    font-size: 1.5rem;
-    cursor: pointer;
-    min-width: 44px;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.playlist-items {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0;
-    -webkit-overflow-scrolling: touch;
-}
-
-.playlist-item {
-    padding: 15px 20px;
-    border-bottom: 0.5px solid var(--separator);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    transition: background-color 0.15s;
-    min-height: 44px;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.playlist-item:active {
-    background-color: rgba(255, 255, 255, 0.08);
-}
-
-.playlist-item.active {
-    background-color: rgba(187, 134, 252, 0.08);
-    color: var(--accent-color);
-}
-
-.playlist-item-index {
-    margin-right: 15px;
-    font-weight: bold;
-    color: var(--label-secondary);
-    min-width: 30px;
-}
-
-.playlist-item.active .playlist-item-index {
-    color: var(--accent-color);
-}
-
-.playlist-item-title {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.hidden {
-    display: none !important;
-}
-
-/* Empty State Card */
-.empty-state-card {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    width: 80%;
-    max-width: 300px;
-    background: var(--secondary-bg);
-    padding: 40px 20px;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    z-index: 100;
-}
-
-.empty-icon {
-    font-size: 3rem;
-    margin-bottom: 20px;
-}
-
-.empty-state-card h2 {
-    margin: 0 0 10px;
-    font-size: 1.5rem;
-}
-
-.empty-state-card p {
-    color: var(--label-secondary);
-    margin-bottom: 25px;
-    line-height: 1.4;
-}
-
-.ios-action-btn.large {
-    font-size: 1.1rem;
-    padding: 12px 24px;
-    width: 100%;
-}
+:root{color-scheme:dark;--bg:#121512;--panel:#1b211c;--ink:#eff1e8;--muted:#acb6a9;--accent:#d8e8b4;--line:#344033}
+*{box-sizing:border-box}
+html{height:100%;overflow:hidden;background:var(--bg)}
+/* Keep the shell inside fixed viewport edges, including installed iOS web apps. */
+body{padding-top:env(safe-area-inset-top);margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;position:fixed;inset:0;height:auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+button,input,select{font:inherit}button,a,input,select{-webkit-tap-highlight-color:transparent}
+button{cursor:pointer;border:1px solid transparent;border-radius:12px;background:#2d382e;color:var(--ink);min-height:56px;min-width:56px;padding:9px 14px;touch-action:manipulation}
+@media(hover:hover){button:hover{background:#394637}}button:disabled{opacity:.35;cursor:default}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{width:100%;max-width:900px;margin:0 auto;flex:1;min-height:0;display:flex;flex-direction:column;padding:0}
+#app{flex:1;min-height:0;display:flex;flex-direction:column}
+.listening-room{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;border:0;border-radius:0;background:var(--bg);padding:0}
+h1{font-size:28px;font-weight:550;line-height:1.2;margin:8px 0}h2{font-size:18px;font-weight:550;margin:0}h3{font-size:17px;font-weight:500}
+#chapters-panel{order:0;flex:1;min-height:0;display:flex;flex-direction:column;padding:0 12px}
+.section-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+#chapters-panel>.section-heading{flex-shrink:0;min-height:60px;margin:0 8px;gap:8px}#chapters-panel .section-heading>div{display:flex;align-items:baseline;gap:10px;min-width:0}
+#book-title{font-size:16px;font-weight:600;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}#chapter-count{white-space:nowrap}
+ol{list-style:none;margin:0;padding:0}#chapters{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 0 8px;scrollbar-width:thin}
+#chapters button{display:flex;align-items:center;gap:16px;background:transparent;text-align:left;width:100%;padding:16px 14px;min-height:60px;font-size:16px;border-radius:10px}
+#chapters button span:first-child{color:var(--muted);font-size:14px;min-width:28px;font-variant-numeric:tabular-nums}#chapters button span:last-child{overflow-wrap:anywhere}
+#chapters button.active{background:#2b392a;color:var(--accent)}#chapters button.active span:first-child{color:var(--accent)}
+.player{order:1;flex-shrink:0;background:var(--bg);border-top:0;padding:8px max(20px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
+.now-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}.player h2{font-size:15px;font-weight:600;line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#settings-btn{flex-shrink:0;font-size:18px;letter-spacing:2px;padding:4px 8px}#status{font-size:12px;margin:0 0 4px}.muted{font-size:14px;color:var(--muted)}
+.timeline{margin:0 0 12px}.timeline input{display:block;width:100%;accent-color:var(--accent);height:28px;margin:0;padding:0}.timeline div{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;line-height:18px;font-variant-numeric:tabular-nums}
+.transport{display:grid;grid-template-columns:minmax(68px,1fr) 76px minmax(68px,1fr);align-items:center;gap:12px;min-height:76px;max-width:420px;margin:0 auto}
+.transport button{position:relative;min-width:68px;min-height:76px;padding:10px;background:transparent;border:0;border-radius:20px;display:grid;place-items:center}
+/* 64 px visible controls share a baseline inside generous 76 px touch targets. */
+.transport button::before{content:"";position:absolute;inset:6px 0;border:1px solid #2c382b;border-radius:20px;background:#202a20;z-index:-1;pointer-events:none}
+.transport .play{width:76px;height:76px;color:#202b1c}
+.transport .play::before{inset:6px;border:0;border-radius:50%;background:var(--accent)}
+.transport button::after{inset:6px 0;border-radius:20px}
+.transport .play::after{inset:6px;border-radius:50%}
+.transport svg{display:block;width:30px;height:30px;overflow:visible}
+.transport svg path{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.transport svg text{fill:currentColor;stroke:none;font:600 12px -apple-system,BlinkMacSystemFont,sans-serif;text-anchor:middle}
+.fine{font-size:12px;color:var(--muted)}#timer-status{margin:4px 0 0;text-align:center;font-size:11px}
+.text-btn{background:transparent;color:var(--accent);padding:8px 10px;font-size:14px;white-space:nowrap}.primary{background:var(--accent);color:#202b1c;font-weight:600}.primary:hover{background:#e4f4c6}
+dialog{max-width:500px;width:calc(100% - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;border:1px solid var(--line);border-radius:22px;background:var(--panel);color:var(--ink);padding:22px}dialog::backdrop{background:#0009}
+#library-dialog{position:fixed;inset:auto 16px calc(12px + env(safe-area-inset-bottom));margin:0 auto;width:min(440px,calc(100% - 32px));max-height:calc(100dvh - env(safe-area-inset-top) - 80px);overscroll-behavior:contain;box-shadow:0 20px 80px #0008;transform-origin:bottom center}
+#library-dialog footer{display:flex;justify-content:flex-end;margin-top:16px;border-top:1px solid var(--line);padding-top:10px}
+#close-library,#close-import,#close-settings{background:transparent;padding:6px}
+.book{width:100%;display:flex;gap:14px;align-items:center;background:transparent;text-align:left;padding:14px 8px}.book+.book{border-top:1px solid var(--line)}.book-icon{width:40px;height:48px;border-radius:5px;background:#394e3c;color:var(--accent);display:grid;place-items:center;flex-shrink:0;font-size:20px}.book strong{display:block;font-weight:500;font-size:15px;overflow-wrap:anywhere}.book small{font-size:12px;color:var(--muted)}.book.active{background:#29352a;border:1px solid #70855c}.empty{text-align:center;padding:20px 0}
+.options{display:grid;gap:12px}.options label{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:16px}.options select{min-height:52px;min-width:140px;background:#2d382e;color:var(--ink);border:0;border-radius:10px;padding:8px 12px}.chapter-actions{display:flex;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}.chapter-actions button{flex:1}
+#settings-dialog{inset:auto 16px calc(12px + env(safe-area-inset-bottom));margin:0 auto;transform-origin:bottom center}
+.login{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:24px;width:calc(100% - 32px);max-width:490px;max-height:100%;overflow-y:auto;min-height:0;margin:20px auto}.login form{margin-top:24px}
+form>label{display:block;margin:18px 0 7px;font-size:14px}input[type=password],input[type=text],input:not([type]){width:100%;border:1px solid #52624d;border-radius:10px;background:var(--bg);color:var(--ink);padding:12px;min-height:48px}form>.primary{margin-top:24px;width:100%}dialog input[type=file]{width:100%;font-size:14px;padding:12px 0}progress{width:100%;accent-color:var(--accent)}
+.notice{flex-shrink:0;margin:0;padding:8px 16px;background:#414630;font-size:13px;max-height:100px;overflow:auto}
+#status:empty,#timer-status:empty,#login-status:empty,#upload-status:empty{display:none}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}[hidden]{display:none!important}
+@media(min-width:741px){main{padding:12px 20px}.listening-room{border:1px solid var(--line);border-radius:18px}.player{padding-bottom:12px}}
+@media(max-height:500px) and (min-width:600px){.listening-room{flex-direction:row}.player{width:48%;border-top:0;border-left:1px solid var(--line);overflow-y:auto}#chapters-panel{width:52%}}
+
+
+/* Local acknowledgement stays inside the existing controls, without shifting layout. */
+.timeline>div{position:relative}
+#seek-feedback{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;color:var(--accent);font-size:12px;font-weight:600;pointer-events:none}
+.library-actions{display:grid;margin-top:16px;padding-top:8px;border-top:1px solid var(--line)}
+.library-actions button{display:flex;align-items:center;justify-content:space-between;min-height:56px;background:transparent;text-align:left;padding:10px 4px}
+.library-actions button+button{border-top:1px solid var(--line);border-radius:0}
+.library-actions button span{color:var(--muted);font-size:20px}
+.library-actions button:active{background:#36472f}
+
+/* Keep the hit area stable: only its feedback surface compresses under the finger. */
+button{position:relative;isolation:isolate;user-select:none;-webkit-user-select:none}
+button::after{content:"";position:absolute;inset:0;border-radius:inherit;background:currentColor;opacity:0;pointer-events:none;transition:opacity .2s ease-out}
+button[data-pressed]::after{opacity:.13;transition:none}
+button[data-feedback]::after{opacity:.09}
+@media(prefers-reduced-motion:no-preference){
+ button::after{transition:opacity .2s ease-out,transform .28s cubic-bezier(.2,.8,.2,1)}
+ button[data-pressed]::after{transform:scale(.94);transition:opacity 0s,transform .08s ease-out}
+ #chapters button[data-pressed]::after{transform:scale(.985)}
+ button[data-pressed]>span,button[data-pressed]>small{transform:translateY(1px)}
+ button>span,button>small{transition:transform .2s ease-out}
+}
+
+.control-glyph{display:block;line-height:1.1}
+@media(prefers-reduced-motion:no-preference){.transport button>.control-glyph{transition:transform .28s cubic-bezier(.2,.8,.2,1)}.transport button[data-pressed]>.control-glyph{transform:scale(.88);transition-duration:.08s}}
+
+/* Fade the list into the player instead of drawing a separate rectangular panel. */
+#chapters{-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 16px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 16px),transparent)}
+
+.transport .play svg{width:24px;height:24px;fill:currentColor}
+.transport .play svg path{fill:currentColor;stroke:none}
+.transport .play .pause-symbol{display:none}
+.transport .play[data-playing="true"] .play-symbol{display:none}
+.transport .play[data-playing="true"] .pause-symbol{display:block}
