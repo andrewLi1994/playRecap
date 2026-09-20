@@ -1,0 +1,9 @@
+data/
+library/*
+!library/.gitkeep
+__pycache__/
+*.pyc
+.DS_Store
+server.log
+server.pid
+legacy/
