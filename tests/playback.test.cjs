@@ -16,7 +16,7 @@ function app() {
  }
  class Audio extends Element {
   constructor(){super();this.paused=true;this.currentTime=0;this.duration=600;this.readyState=1;this.playbackRate=1;this.defaultPlaybackRate=1;}
-  set src(value){this.source=value;this.currentTime=0;this.readyState=0;this.ended=false;this.playbackRate=this.defaultPlaybackRate;}
+  set src(value){this.sourceChanges=(this.sourceChanges||0)+1;this.source=value;this.currentTime=0;this.readyState=0;this.ended=false;this.playbackRate=this.defaultPlaybackRate;}
   play(){this.paused=false;this.emit('play');return Promise.resolve();}
   pause(){if(!this.paused){this.paused=true;this.emit('pause');}}
   metadata(){this.readyState=1;this.emit('loadedmetadata');}
@@ -57,4 +57,35 @@ test('A new chapter owns its zero position immediately, before metadata arrives'
  const a=app();a.elements.audio.currentTime=200;a.run('selectChapter(1,0,false)');
  const progress=JSON.parse(a.store.playrecap_private_v1).progress.one;
  assert.equal(progress.chapterId,'b');assert.equal(progress.time,0);
+});
+
+test('Tapping the playing chapter does not interrupt or reload its source',()=>{
+ const a=app();a.run('play()');a.elements.audio.currentTime=123;
+ const loads=a.elements.audio.sourceChanges;
+ let pauses=0;a.elements.audio.addEventListener('pause',()=>pauses++);
+ a.elements.chapters.children[0].children[0].emit('click');
+ assert.equal(a.elements.audio.currentTime,123);
+ assert.equal(a.elements.audio.sourceChanges,loads);
+ assert.equal(a.elements.audio.paused,false);assert.equal(pauses,0);
+});
+test('Tapping the paused chapter resumes at the current position',()=>{
+ const a=app();a.elements.audio.currentTime=87;const loads=a.elements.audio.sourceChanges;
+ a.elements.chapters.children[0].children[0].emit('click');
+ assert.equal(a.elements.audio.currentTime,87);assert.equal(a.elements.audio.paused,false);
+ assert.equal(a.elements.audio.sourceChanges,loads);
+});
+test('Repeated taps while loading preserve the pending resume position',()=>{
+ const a=app();a.run('selectChapter(1,72,true)');const loads=a.elements.audio.sourceChanges;
+ a.elements.chapters.children[1].children[0].emit('click');
+ a.elements.chapters.children[1].children[0].emit('click');
+ assert.equal(a.elements.audio.sourceChanges,loads);
+ a.elements.audio.metadata();assert.equal(a.elements.audio.currentTime,72);
+});
+test('Another chapter starts normally, and an errored current chapter can retry',()=>{
+ const a=app();a.elements.audio.currentTime=87;
+ a.elements.chapters.children[1].children[0].emit('click');a.elements.audio.metadata();
+ assert.equal(a.elements.audio.source,'/b');assert.equal(a.elements.audio.currentTime,0);
+ const loads=a.elements.audio.sourceChanges;a.elements.audio.error={code:2};
+ a.elements.chapters.children[1].children[0].emit('click');
+ assert.equal(a.elements.audio.sourceChanges,loads+1);
 });

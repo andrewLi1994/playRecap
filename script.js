@@ -2,16 +2,6 @@
 const $ = id => document.getElementById(id);
 const audio = $('audio');
 const KEY = 'playrecap_private_v1';
-function fitViewport() {
-    const height = window.visualViewport?.height || window.innerHeight;
-    if (Number.isFinite(height) && height > 0 && (!window.visualViewport || window.visualViewport.scale === 1)) {
-        document.documentElement.style.setProperty('--app-height', Math.round(height) + 'px');
-    }
-}
-fitViewport();
-window.addEventListener('resize', fitViewport);
-window.addEventListener('pageshow', fitViewport);
-window.visualViewport?.addEventListener('resize', fitViewport);
 function chapterLabel(book, chapter, chapterIndex) {
     let title = chapter.title;
     const prefix = book.title.replace(/[\s·•—–:：-]/g, '');
@@ -102,9 +92,17 @@ function renderChapters() {
         if (i === index) button.setAttribute('aria-current', 'true');
         const number = document.createElement('span'), title = document.createElement('span');
         number.textContent = String(i+1).padStart(2,'0'); title.textContent = chapterLabel(currentBook, chapter, i);
-        button.append(number, title); button.addEventListener('click', () => selectChapter(i, 0, true)); row.append(button); $('chapters').append(row);
+        button.append(number, title); button.addEventListener('click', () => activateChapter(i)); row.append(button); $('chapters').append(row);
     });
     $('chapters').querySelector('[aria-current="true"]')?.scrollIntoView({block: 'nearest'});
+}
+function activateChapter(i) {
+    // A tap on the current row means continue, not restart (including buffering).
+    if (i === index && !audio.error && !audio.ended) {
+        if (audio.paused) play();
+        return;
+    }
+    selectChapter(i, 0, true);
 }
 function selectBook(book, autoplay) {
     if (currentBook?.id === book.id && index >= 0) { if (autoplay) play(); return; }
