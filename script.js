@@ -2,6 +2,25 @@
 const $ = id => document.getElementById(id);
 const audio = $('audio');
 const KEY = 'playrecap_private_v1';
+function fitViewport() {
+    const height = window.visualViewport?.height || window.innerHeight;
+    if (Number.isFinite(height) && height > 0 && (!window.visualViewport || window.visualViewport.scale === 1)) {
+        document.documentElement.style.setProperty('--app-height', Math.round(height) + 'px');
+    }
+}
+fitViewport();
+window.addEventListener('resize', fitViewport);
+window.addEventListener('pageshow', fitViewport);
+window.visualViewport?.addEventListener('resize', fitViewport);
+function chapterLabel(book, chapter, chapterIndex) {
+    let title = chapter.title;
+    const prefix = book.title.replace(/[\s·•—–:：-]/g, '');
+    if (prefix && title.startsWith(prefix)) title = title.slice(prefix.length).trim();
+    // Strip a duplicate number only when it matches this chapter's list position.
+    const numbered = title.match(/^(?:第\s*)?(\d+)(?:\s*[章集回])?[\s.、:：-]*/);
+    if (numbered && Number(numbered[1]) === chapterIndex + 1) title = title.slice(numbered[0].length).trim();
+    return title || chapter.title;
+}
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch {}
 if (!saved || typeof saved !== 'object' || Array.isArray(saved)) saved = {};
@@ -30,7 +49,7 @@ async function api(path, body) {
     }
     return value;
 }
-function showLogin() { $('login').hidden = false; $('app').hidden = true; $('library-btn').hidden = true; if ($('library-dialog').open) $('library-dialog').close(); }
+function showLogin() { $('login').hidden = false; $('app').hidden = true; $('library-btn').hidden = true; if ($('settings-dialog').open) $('settings-dialog').close(); if ($('library-dialog').open) $('library-dialog').close(); }
 async function refresh() {
     const data = await api('/api/library');
     books = data.books;
@@ -82,7 +101,7 @@ function renderChapters() {
         button.className = i === index ? 'active' : '';
         if (i === index) button.setAttribute('aria-current', 'true');
         const number = document.createElement('span'), title = document.createElement('span');
-        number.textContent = String(i+1).padStart(2,'0'); title.textContent = chapter.title;
+        number.textContent = String(i+1).padStart(2,'0'); title.textContent = chapterLabel(currentBook, chapter, i);
         button.append(number, title); button.addEventListener('click', () => selectChapter(i, 0, true)); row.append(button); $('chapters').append(row);
     });
     $('chapters').querySelector('[aria-current="true"]')?.scrollIntoView({block: 'nearest'});
@@ -106,9 +125,9 @@ function selectChapter(i, time = 0, autoplay = true, saveOld = true) {
     audio.defaultPlaybackRate = Number($('speed').value);
     audio.src = chapter.url; audio.playbackRate = audio.defaultPlaybackRate;
     $('book-title').textContent = currentBook.title;
-    $('chapter-title').textContent = chapter.title;
+    $('chapter-title').textContent = `第 ${i+1} 章 · ${chapterLabel(currentBook, chapter, i)}`;
     $('elapsed').textContent = format(time); $('duration').textContent = '0:00'; $('seek').value = 0;
-    status(autoplay ? '正在加载音频…' : time ? '继续听' : '');
+    status(autoplay ? '正在加载音频…' : '');
     updateControls(); renderChapters(); renderBooks(); updateMedia();
     if (autoplay) play();
 }
@@ -156,9 +175,9 @@ audio.addEventListener('loadedmetadata', () => {
     }
     updateControls(); updatePosition();
 });
-audio.addEventListener('playing', () => { if (!checkTimer()) status('正在播放'); updateControls(); });
+audio.addEventListener('playing', () => { if (!checkTimer()) status(''); updateControls(); });
 audio.addEventListener('play', updateControls);
-audio.addEventListener('pause', () => { saveProgress(true); updateControls(); if (!audio.ended) status('已暂停'); });
+audio.addEventListener('pause', () => { saveProgress(true); updateControls(); if (!audio.ended) status(''); });
 audio.addEventListener('waiting', () => { if (!audio.paused) status('正在缓冲…'); });
 audio.addEventListener('error', () => { status('音频加载失败。请检查网络或文件，点击播放重试。'); updateControls(); });
 audio.addEventListener('timeupdate', () => { checkTimer(); saveProgress(); updatePosition(); });
@@ -184,7 +203,7 @@ setInterval(checkTimer, 1000);
 $('speed').value = ['0.75','1','1.25','1.5','2'].includes(String(saved.speed)) ? String(saved.speed) : '1';
 $('speed').addEventListener('change', () => { audio.defaultPlaybackRate = Number($('speed').value); audio.playbackRate = audio.defaultPlaybackRate; saved.speed = audio.playbackRate; persist(); updatePosition(); });
 $('play').addEventListener('click', () => audio.paused ? play() : audio.pause());
-$('prev').addEventListener('click', () => selectChapter(index-1)); $('next').addEventListener('click', () => selectChapter(index+1));
+$('prev').addEventListener('click', () => { selectChapter(index-1); $('settings-dialog').close(); }); $('next').addEventListener('click', () => { selectChapter(index+1); $('settings-dialog').close(); });
 $('back').addEventListener('click', () => seekTo(audio.currentTime-15)); $('forward').addEventListener('click', () => seekTo(audio.currentTime+15));
 $('seek').addEventListener('input', () => { $('elapsed').textContent = format(Number($('seek').value)*audio.duration/100); });
 $('seek').addEventListener('change', () => seekTo(Number($('seek').value)*audio.duration/100));
@@ -209,6 +228,9 @@ $('library-dialog').addEventListener('click', e => {
     const r = e.target.getBoundingClientRect();
     if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) e.target.close();
 });
+$('settings-btn').addEventListener('click', () => $('settings-dialog').showModal());
+$('close-settings').addEventListener('click', () => $('settings-dialog').close());
+$('current-chapter').addEventListener('click', () => $('chapters').querySelector('[aria-current="true"]')?.scrollIntoView({block: 'nearest'}));
 function openImport() { $('library-dialog').close(); $('import-dialog').showModal(); }
 $('add-btn').addEventListener('click', openImport); $('empty-add').addEventListener('click', openImport);
 $('close-import').addEventListener('click', () => { if (!uploading) $('import-dialog').close(); });
