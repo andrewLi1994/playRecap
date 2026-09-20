@@ -1,5 +1,7 @@
 import hashlib
 import json
+import io
+import ssl
 from pathlib import Path
 import tempfile
 import unittest
@@ -8,6 +10,33 @@ from upload_library import LibraryClient
 
 
 class CloudUploadTests(unittest.TestCase):
+    def test_retry_rewinds_audio_after_partial_connection_failure(self):
+        sent = []
+        class Response:
+            status = 201
+            def read(self, size): return b'{}'
+            def getheaders(self): return []
+        class Connection:
+            def request(self, method, path, body=None, headers=None):
+                sent.append(body.read(2) if not sent else body.read())
+                if len(sent) == 1: raise OSError('connection closed')
+            def getresponse(self): return Response()
+            def close(self): pass
+        client = LibraryClient.__new__(LibraryClient)
+        client.host, client.port, client.cookie = 'example.com', 443, None
+        with patch('upload_library.http.client.HTTPSConnection', side_effect=lambda *a, **k: Connection()), patch('upload_library.time.sleep'):
+            self.assertEqual(client.request('POST', '/api/upload', io.BytesIO(b'abcdef'))[0], 201)
+        self.assertEqual(sent, [b'ab', b'abcdef'])
+
+    def test_certificate_verification_failure_is_not_retried(self):
+        client = LibraryClient.__new__(LibraryClient)
+        client.host, client.port, client.cookie = 'example.com', 443, None
+        with patch('upload_library.http.client.HTTPSConnection') as connection:
+            connection.return_value.request.side_effect = ssl.SSLCertVerificationError('invalid certificate')
+            with self.assertRaises(ssl.SSLCertVerificationError):
+                client.request('GET', '/api/library')
+            self.assertEqual(connection.call_count, 1)
+
     def test_rejects_unsafe_destinations_before_sending_code(self):
         with patch.object(LibraryClient, 'request') as request:
             for site in ['http://example.com', 'https://user:pass@example.com',

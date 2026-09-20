@@ -43,7 +43,7 @@ python3 import_youtube.py 'https://www.youtube.com/playlist?list=PLAYLIST_ID' --
 
 默认仅下载前 3 个条目。通过 `--items '4:20'` 继续下一批；已完成项目由下载归档跳过。可用 `--downloader /path/to/yt-dlp` 指定隔离环境。下载可能因 YouTube 接口变化、视频下架、地区或访问限制失败；失败时保留已完成的文件。
 
-部署线上书库后，在同一个命令加 `--site 'https://你的书库地址'`，即可批量下载后自动上传，无需逐集操作。上传使用 `data/access-code.txt`（可用 `--code-file` 指定），只发送到明确指定的 HTTPS 站点，不跟随重定向。再次运行跳过已经上传的章节；下载或上传中断后可以重跑。
+部署线上书库后，在同一个命令加 `--site 'https://你的书库地址'`，即可批量下载后自动上传，无需逐集操作。上传使用 `data/access-code.txt`（可用 `--code-file` 指定），只发送到明确指定的 HTTPS 站点，不跟随重定向。再次运行跳过已经上传的章节；最多同时上传 3 个文件，临时连接中断自动重试最多 3 次，证书验证失败不会绕过。下载或上传中断后可以重跑。
 
 ```sh
 python3 import_youtube.py 'https://www.youtube.com/playlist?list=PLAYLIST_ID' --book '书名' --items '1:100' --site 'https://你的书库地址'
