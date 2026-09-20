@@ -18,9 +18,9 @@
 </section>
 <div id="app" hidden>
 
-<div class="layout">
-<section class="panel player" aria-label="音频播放器">
-<div class="cover" aria-hidden="true"><div class="moon"></div><div class="cover-lines"></div></div>
+<div class="listening-room panel">
+<section class="player" aria-label="音频播放器">
+
 <p id="book-title" class="eyebrow"></p><h2 id="chapter-title">暂无音频</h2><p id="status" role="status" class="muted"></p>
 <audio id="audio" preload="metadata" playsinline></audio>
 <div class="timeline"><label class="sr-only" for="seek">播放进度</label><input type="range" id="seek" min="0" max="100" value="0" step="0.1" disabled><div><span id="elapsed">0:00</span><span id="duration">0:00</span></div></div>
@@ -28,7 +28,7 @@
 <div class="options"><label>倍速<select id="speed" aria-label="倍速"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label><label>睡眠定时<select id="timer" aria-label="睡眠定时"><option value="0">关闭</option><option value="15">15 分钟</option><option value="30">30 分钟</option><option value="45">45 分钟</option><option value="60">60 分钟</option><option value="chapter">本章结束</option></select></label></div>
 <p id="timer-status" class="fine" role="status"></p>
 </section>
-<section id="chapters-panel" class="panel" hidden><div class="section-heading"><h2>章节</h2><span id="chapter-count" class="fine"></span></div><ol id="chapters"></ol></section>
+<section id="chapters-panel" hidden><div class="section-heading"><h2>章节</h2><span id="chapter-count" class="fine"></span></div><ol id="chapters"></ol></section>
 </div>
 
 </div>

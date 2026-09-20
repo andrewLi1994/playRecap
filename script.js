@@ -85,6 +85,7 @@ function renderChapters() {
         number.textContent = String(i+1).padStart(2,'0'); title.textContent = chapter.title;
         button.append(number, title); button.addEventListener('click', () => selectChapter(i, 0, true)); row.append(button); $('chapters').append(row);
     });
+    $('chapters').querySelector('[aria-current="true"]')?.scrollIntoView({block: 'nearest'});
 }
 function selectBook(book, autoplay) {
     if (currentBook?.id === book.id && index >= 0) { if (autoplay) play(); return; }
