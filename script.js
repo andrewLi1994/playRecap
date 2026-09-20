@@ -146,7 +146,7 @@ function updateControls() {
     $('prev').disabled = !ready || index === 0;
     $('next').disabled = !ready || index >= currentBook.chapters.length-1;
     $('seek').disabled = !ready || !Number.isFinite(audio.duration);
-    $('play-icon').textContent = audio.paused ? '▶' : 'Ⅱ'; $('play').setAttribute('aria-label', audio.paused ? '播放' : '暂停');
+    $('play').dataset.playing = String(!audio.paused); $('play').setAttribute('aria-label', audio.paused ? '播放' : '暂停');
     try { if ('mediaSession' in navigator) navigator.mediaSession.playbackState = audio.paused ? 'paused' : 'playing'; } catch {}
 }
 function seekTo(time) {
