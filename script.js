@@ -30,11 +30,11 @@ async function api(path, body) {
     }
     return value;
 }
-function showLogin() { $('login').hidden = false; $('app').hidden = true; }
+function showLogin() { $('login').hidden = false; $('app').hidden = true; $('library-btn').hidden = true; if ($('library-dialog').open) $('library-dialog').close(); }
 async function refresh() {
     const data = await api('/api/library');
     books = data.books;
-    $('login').hidden = true; $('app').hidden = false;
+    $('login').hidden = true; $('app').hidden = false; $('library-btn').hidden = false;
     // Keep the active chapter stable while new files are added to the library.
     if (currentBook) {
         const chapterId = currentBook.chapters[index]?.id;
@@ -70,7 +70,7 @@ function renderBooks() {
         const chapter = book.chapters.findIndex(c => c.id === progress?.chapterId);
         subtitle.textContent = `${book.chapters.length} 章` + (progress?.completed ? ' · 已听完' : chapter >= 0 ? ` · 上次听到第 ${chapter+1} 章 ${format(progress.time)}` : ' · 尚未开始');
         text.append(title, subtitle); button.append(icon, text);
-        button.addEventListener('click', () => selectBook(book, true)); $('books').append(button);
+        button.addEventListener('click', () => { selectBook(book, true); $('library-dialog').close(); }); $('books').append(button);
     }
 }
 function renderChapters() {
@@ -200,7 +200,15 @@ $('logout').addEventListener('click', async () => {
     try { await api('/api/logout', {}); audio.removeAttribute('src'); audio.load(); currentBook = null; index = -1; showLogin(); }
     catch (e) { notice(e.message); }
 });
-function openImport() { $('import-dialog').showModal(); }
+$('library-btn').addEventListener('click', () => { $('library-dialog').showModal(); $('library-btn').setAttribute('aria-expanded', 'true'); });
+$('close-library').addEventListener('click', () => $('library-dialog').close());
+$('library-dialog').addEventListener('close', () => $('library-btn').setAttribute('aria-expanded', 'false'));
+$('library-dialog').addEventListener('click', e => {
+    if (e.target !== $('library-dialog')) return;
+    const r = e.target.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) e.target.close();
+});
+function openImport() { $('library-dialog').close(); $('import-dialog').showModal(); }
 $('add-btn').addEventListener('click', openImport); $('empty-add').addEventListener('click', openImport);
 $('close-import').addEventListener('click', () => { if (!uploading) $('import-dialog').close(); });
 $('import-dialog').addEventListener('cancel', e => { if (uploading) e.preventDefault(); });

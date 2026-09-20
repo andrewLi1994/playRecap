@@ -1,6 +1,6 @@
 const encoder = new TextEncoder();
 const MIME = {mp3:'audio/mpeg',m4a:'audio/mp4',mp4:'audio/mp4',aac:'audio/aac',wav:'audio/wav',ogg:'audio/ogg',opus:'audio/ogg',flac:'audio/flac'};
-const STATIC = new Set(['/','/index.html','/script.js','/styles.css','/icon.svg']);
+const STATIC = new Set(['/','/index.html','/script.js','/styles.css','/icon.svg','/manifest.webmanifest','/apple-touch-icon.png','/icon-192.png','/icon-512.png']);
 const MAX_FILE = 80 * 1024 * 1024;
 const MAX_LIBRARY = 8 * 1000 ** 3; // Application guardrail, not an account billing cap.
 const security = {

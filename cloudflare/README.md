@@ -21,7 +21,7 @@ wrangler secret put ACCESS_CODE
 
 `ACCESS_CODE` 使用至少 20 字符的随机口令，通过 secret 命令的标准输入设置，不写入代码或命令参数。不要开启 R2 公共访问或 r2.dev；所有音频经过 Worker 的登录检查。
 
-Wrangler 返回正式 HTTPS 地址后，先验证未登录时音频为 401，再登录上传已下载的 M4A 文件。上传工具与网页均复用 `/api/upload` 接口。部署只包含 4 个网页文件及 Worker，音频不进入 Git 或静态托管。
+Wrangler 返回正式 HTTPS 地址后，先验证未登录时音频为 401，再登录上传已下载的 M4A 文件。上传工具与网页均复用 `/api/upload` 接口。部署只包含 8 个网页与应用图标文件及 Worker，音频不进入 Git 或静态托管。
 
 在仓库根目录运行 `python3 upload_library.py --site 'https://你的书库地址' --book '书名'` 可补传已下载的音频。后续直接使用 `import_youtube.py` 的 `--site` 参数，串联批量下载和上传；两步都可重跑续传。导入命令需在 Mac 上运行，完成后手机播放不需要 Mac 开机。
 

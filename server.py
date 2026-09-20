@@ -18,7 +18,7 @@ from urllib.parse import urlsplit, unquote
 ROOT = Path(__file__).resolve().parent
 EXTENSIONS = {'.mp3', '.m4a', '.aac', '.wav', '.ogg', '.opus', '.flac', '.mp4'}
 MIME = {'.m4a': 'audio/mp4', '.mp3': 'audio/mpeg', '.aac': 'audio/aac'}
-STATIC = {'/': 'index.html', '/index.html': 'index.html', '/script.js': 'script.js', '/styles.css': 'styles.css', '/icon.svg': 'icon.svg'}
+STATIC = {'/': 'index.html', '/index.html': 'index.html', '/script.js': 'script.js', '/styles.css': 'styles.css', '/icon.svg': 'icon.svg', '/manifest.webmanifest': 'manifest.webmanifest', '/apple-touch-icon.png': 'apple-touch-icon.png', '/icon-192.png': 'icon-192.png', '/icon-512.png': 'icon-512.png'}
 MAX_UPLOAD = 2 * 1024 ** 3
 
 def natural(value):
