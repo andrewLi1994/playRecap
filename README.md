@@ -43,6 +43,16 @@ python3 import_youtube.py 'https://www.youtube.com/playlist?list=PLAYLIST_ID' --
 
 默认仅下载前 3 个条目。通过 `--items '4:20'` 继续下一批；已完成项目由下载归档跳过。可用 `--downloader /path/to/yt-dlp` 指定隔离环境。下载可能因 YouTube 接口变化、视频下架、地区或访问限制失败；失败时保留已完成的文件。
 
+部署线上书库后，在同一个命令加 `--site 'https://你的书库地址'`，即可批量下载后自动上传，无需逐集操作。上传使用 `data/access-code.txt`（可用 `--code-file` 指定），只发送到明确指定的 HTTPS 站点，不跟随重定向。再次运行跳过已经上传的章节；下载或上传中断后可以重跑。
+
+```sh
+python3 import_youtube.py 'https://www.youtube.com/playlist?list=PLAYLIST_ID' --book '书名' --items '1:100' --site 'https://你的书库地址'
+# 只补传本机已下载的章节：
+python3 upload_library.py --book '书名' --site 'https://你的书库地址'
+```
+
+导入时电脑需开机联网，导入完成后手机播放不依赖电脑。尚未设置定期检查新章节，也没有手机网页后台下载 YouTube 的功能。
+
 ## 已实现
 
 - 持久化音频书库、批量上传、章节自然排序。
@@ -61,6 +71,7 @@ python3 import_youtube.py 'https://www.youtube.com/playlist?list=PLAYLIST_ID' --
 python3 -m unittest discover -s tests -v
 node --check script.js
 node --test tests/playback.test.cjs
+node --test tests/cloudflare.test.mjs
 ```
 
 后端测试覆盖访问控制、私人路径隔离、上传重复保护、目录穿越、符号链接、Range 和 HEAD。
@@ -75,7 +86,9 @@ node --test tests/playback.test.cjs
 
 ## 独立线上部署（手机流量可访问）
 
-已包含 Dockerfile 和 Railway 配置，但未自动创建计费资源。
+优先选择 [Cloudflare Workers + 私有 R2 部署](cloudflare/README.md)，使用免费额度承载个人书库。线上版单文件上限 80 MB、书库 8 GB 应用保护线；R2 超出账户免费额度可能计费。
+
+也保留了 Dockerfile 和 Railway 配置，以下为付费服务器备选步骤：
 
 1. 从代码分支部署为独立服务，挂载持久磁盘到 `/storage`。必须挂载持久磁盘，否则重新部署会丢失音频与访问口令。
 2. 启用 HTTPS 域名。容器默认启用 Secure 登录 cookie，不支持直接用明文 HTTP 登录。

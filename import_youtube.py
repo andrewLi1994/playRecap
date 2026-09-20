@@ -15,6 +15,8 @@ def main():
     p.add_argument('--book', required=True, help='Book name as it appears on the shelf')
     p.add_argument('--items', default='1:3', help='Playlist range, default 1:3; pass e.g. 4:20 for more chapters')
     p.add_argument('--downloader', default='yt-dlp', help='Path to a current yt-dlp executable')
+    p.add_argument('--site', help='Upload completed chapters to your own HTTPS library after downloading')
+    p.add_argument('--code-file', type=Path, default=ROOT/'data/access-code.txt')
     args = p.parse_args()
     parsed = urlsplit(args.url)
     if parsed.scheme != 'https' or parsed.hostname not in {'youtube.com','www.youtube.com','m.youtube.com','youtu.be'}:
@@ -24,6 +26,13 @@ def main():
     downloader = shutil.which(args.downloader)
     if not downloader: p.error('yt-dlp is not installed. Install a current version in an isolated environment.')
     if not shutil.which('ffmpeg'): p.error('ffmpeg is required for conversion to M4A.')
+    client = None
+    if args.site:
+        from upload_library import LibraryClient
+        try:
+            client = LibraryClient(args.site, args.code_file.read_text().strip())
+        except (OSError, ValueError) as error:
+            p.error(str(error))
     directory = ROOT/'library'/args.book.strip()
     directory.mkdir(parents=True, exist_ok=True)
     data = ROOT/'data'; data.mkdir(exist_ok=True)
@@ -39,6 +48,12 @@ def main():
     files = [f for f in directory.iterdir() if f.suffix in {'.m4a','.mp3'}]
     print(f'Library has {len(files)} completed audio file(s) in {directory}')
     if result.returncode: print('Import incomplete. Completed chapters are preserved; rerun to resume.', file=sys.stderr)
+    if client:
+        try:
+            client.sync(directory)
+        except (OSError, ValueError) as error:
+            print(f'Cloud sync incomplete: {error}', file=sys.stderr)
+            return 1
     return result.returncode
 
 if __name__ == '__main__': sys.exit(main())
