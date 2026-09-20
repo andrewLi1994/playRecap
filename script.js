@@ -150,8 +150,9 @@ function updateControls() {
     try { if ('mediaSession' in navigator) navigator.mediaSession.playbackState = audio.paused ? 'paused' : 'playing'; } catch {}
 }
 function seekTo(time) {
-    if (!Number.isFinite(audio.duration) || pendingSeek !== null) return;
+    if (!Number.isFinite(audio.duration) || pendingSeek !== null) return false;
     audio.currentTime = Math.max(0, Math.min(time, audio.duration)); saveProgress(true); updatePosition();
+    return true;
 }
 function updatePosition() {
     $('elapsed').textContent = format(audio.currentTime); $('duration').textContent = format(audio.duration);
@@ -202,7 +203,33 @@ $('speed').value = ['0.75','1','1.25','1.5','2'].includes(String(saved.speed)) ?
 $('speed').addEventListener('change', () => { audio.defaultPlaybackRate = Number($('speed').value); audio.playbackRate = audio.defaultPlaybackRate; saved.speed = audio.playbackRate; persist(); updatePosition(); });
 $('play').addEventListener('click', () => audio.paused ? play() : audio.pause());
 $('prev').addEventListener('click', () => { selectChapter(index-1); $('settings-dialog').close(); }); $('next').addEventListener('click', () => { selectChapter(index+1); $('settings-dialog').close(); });
-$('back').addEventListener('click', () => seekTo(audio.currentTime-15)); $('forward').addEventListener('click', () => seekTo(audio.currentTime+15));
+let seekFeedbackTimer;
+function skipBy(seconds) {
+    const before = audio.currentTime;
+    const moved = seekTo(before + seconds);
+    const delta = audio.currentTime - before;
+    const feedback = $('seek-feedback');
+    feedback.textContent = !moved ? '音频加载中' : Math.abs(delta) < .01 ? (seconds < 0 ? '已到开头' : '已到结尾') : `${delta > 0 ? '＋' : '−'}${Number(Math.abs(delta).toFixed(1))} 秒`;
+    clearTimeout(seekFeedbackTimer);
+    seekFeedbackTimer = setTimeout(() => { feedback.textContent = ''; }, 900);
+}
+$('back').addEventListener('click', () => skipBy(-15)); $('forward').addEventListener('click', () => skipBy(15));
+// Touch-down feedback is immediate; release/cancel never delays the actual action.
+for (const id of ['back', 'play', 'forward', 'settings-btn']) {
+    const button = $(id);
+    let feedbackTimer;
+    button.addEventListener('pointerdown', () => { if (!button.disabled) button.dataset.pressed = 'true'; });
+    const release = () => { delete button.dataset.pressed; };
+    button.addEventListener('pointerup', release);
+    button.addEventListener('pointercancel', release);
+    button.addEventListener('pointerleave', release);
+    window.addEventListener('blur', release);
+    button.addEventListener('click', () => {
+        button.dataset.feedback = 'true';
+        clearTimeout(feedbackTimer);
+        feedbackTimer = setTimeout(() => { delete button.dataset.feedback; }, 350);
+    });
+}
 $('seek').addEventListener('input', () => { $('elapsed').textContent = format(Number($('seek').value)*audio.duration/100); });
 $('seek').addEventListener('change', () => seekTo(Number($('seek').value)*audio.duration/100));
 window.addEventListener('pagehide', () => saveProgress(true));

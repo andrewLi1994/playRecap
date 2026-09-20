@@ -44,3 +44,14 @@ form>label{display:block;margin:18px 0 7px;font-size:14px}input[type=password],i
 @media(min-width:741px){main{padding:12px 20px}.listening-room{border:1px solid var(--line);border-radius:18px}.player{padding-bottom:12px}}
 @media(max-height:500px) and (min-width:600px){.listening-room{flex-direction:row}.player{width:48%;border-top:0;border-left:1px solid var(--line);overflow-y:auto}#chapters-panel{width:52%}}
 @media(prefers-reduced-motion:no-preference){button{transition:background .15s,transform .15s}button:active:not(:disabled){transform:scale(.97)}}
+
+/* Local acknowledgement stays inside the existing controls, without shifting layout. */
+.timeline>div{position:relative}
+#seek-feedback{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;color:var(--accent);font-size:12px;font-weight:600;pointer-events:none}
+.transport button:not(.play)[data-feedback],.transport button:not(.play)[data-pressed],#settings-btn[data-feedback],#settings-btn[data-pressed]{background:#36472f;color:var(--accent)}
+.transport .play[data-feedback],.transport .play[data-pressed]{background:#bed394}
+@media(prefers-reduced-motion:no-preference){
+ .transport button,#settings-btn{transition:background .15s,transform .18s ease-out}
+ .transport button[data-pressed],#settings-btn[data-pressed]{transform:scale(.90);transition:none}
+ .transport button:active:not(:disabled){transform:scale(.90)}
+}

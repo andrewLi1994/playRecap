@@ -23,7 +23,7 @@
 
 <div class="now-heading"><h2 id="chapter-title">暂无音频</h2><button id="settings-btn" class="text-btn" aria-label="更多播放设置" aria-haspopup="dialog" aria-controls="settings-dialog">•••</button></div><p id="status" role="status" class="muted"></p>
 <audio id="audio" preload="metadata" playsinline></audio>
-<div class="timeline"><label class="sr-only" for="seek">播放进度</label><input type="range" id="seek" min="0" max="100" value="0" step="0.1" disabled><div><span id="elapsed">0:00</span><span id="duration">0:00</span></div></div>
+<div class="timeline"><label class="sr-only" for="seek">播放进度</label><input type="range" id="seek" min="0" max="100" value="0" step="0.1" disabled><div><span id="elapsed">0:00</span><span id="seek-feedback" role="status" aria-live="polite" aria-atomic="true"></span><span id="duration">0:00</span></div></div>
 <div class="transport"><button id="back" aria-label="后退 15 秒" disabled>↶<small>15</small></button><button id="play" class="play" aria-label="播放" disabled>▶</button><button id="forward" aria-label="前进 15 秒" disabled>↷<small>15</small></button></div>
 <p id="timer-status" class="fine" role="status"></p>
 </section>
