@@ -146,7 +146,7 @@ function updateControls() {
     $('prev').disabled = !ready || index === 0;
     $('next').disabled = !ready || index >= currentBook.chapters.length-1;
     $('seek').disabled = !ready || !Number.isFinite(audio.duration);
-    $('play').textContent = audio.paused ? '▶' : 'Ⅱ'; $('play').setAttribute('aria-label', audio.paused ? '播放' : '暂停');
+    $('play-icon').textContent = audio.paused ? '▶' : 'Ⅱ'; $('play').setAttribute('aria-label', audio.paused ? '播放' : '暂停');
     try { if ('mediaSession' in navigator) navigator.mediaSession.playbackState = audio.paused ? 'paused' : 'playing'; } catch {}
 }
 function seekTo(time) {
@@ -214,22 +214,32 @@ function skipBy(seconds) {
     seekFeedbackTimer = setTimeout(() => { feedback.textContent = ''; }, 900);
 }
 $('back').addEventListener('click', () => skipBy(-15)); $('forward').addEventListener('click', () => skipBy(15));
-// Touch-down feedback is immediate; release/cancel never delays the actual action.
-for (const id of ['back', 'play', 'forward', 'settings-btn']) {
-    const button = $(id);
-    let feedbackTimer;
-    button.addEventListener('pointerdown', () => { if (!button.disabled) button.dataset.pressed = 'true'; });
-    const release = () => { delete button.dataset.pressed; };
-    button.addEventListener('pointerup', release);
-    button.addEventListener('pointercancel', release);
-    button.addEventListener('pointerleave', release);
-    window.addEventListener('blur', release);
-    button.addEventListener('click', () => {
-        button.dataset.feedback = 'true';
-        clearTimeout(feedbackTimer);
-        feedbackTimer = setTimeout(() => { delete button.dataset.feedback; }, 350);
-    });
+// Delegate to include chapter rows recreated while changing books or chapters.
+const activePresses = new Map(), feedbackTimers = new WeakMap();
+function releasePress(pointerId) {
+    const press = activePresses.get(pointerId);
+    if (press) { delete press.button.dataset.pressed; activePresses.delete(pointerId); }
 }
+document.addEventListener('pointerdown', e => {
+    const button = e.target.closest?.('button:not(:disabled)');
+    if (!button || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    releasePress(e.pointerId);
+    activePresses.set(e.pointerId, {button, x:e.clientX, y:e.clientY});
+    button.dataset.pressed = 'true';
+}, {passive:true});
+document.addEventListener('pointermove', e => {
+    const press = activePresses.get(e.pointerId);
+    if (press && Math.hypot(e.clientX-press.x, e.clientY-press.y) > 10) releasePress(e.pointerId);
+}, {passive:true});
+for (const event of ['pointerup', 'pointercancel']) document.addEventListener(event, e => releasePress(e.pointerId), {passive:true});
+window.addEventListener('blur', () => { for (const id of activePresses.keys()) releasePress(id); });
+document.addEventListener('click', e => {
+    const button = e.target.closest?.('button:not(:disabled)');
+    if (!button) return;
+    button.dataset.feedback = 'true';
+    clearTimeout(feedbackTimers.get(button));
+    feedbackTimers.set(button, setTimeout(() => { delete button.dataset.feedback; }, 240));
+}, true);
 $('seek').addEventListener('input', () => { $('elapsed').textContent = format(Number($('seek').value)*audio.duration/100); });
 $('seek').addEventListener('change', () => seekTo(Number($('seek').value)*audio.duration/100));
 window.addEventListener('pagehide', () => saveProgress(true));

@@ -4,8 +4,8 @@ html{height:100%;overflow:hidden;background:var(--bg)}
 /* iOS standalone visualViewport can exclude safe areas. Anchor the shell instead. */
 body{padding-top:env(safe-area-inset-top);margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;position:fixed;inset:0;height:auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 button,input,select{font:inherit}button,a,input,select{-webkit-tap-highlight-color:transparent}
-button{cursor:pointer;border:1px solid transparent;border-radius:12px;background:#2d382e;color:var(--ink);min-height:44px;min-width:44px;padding:9px 14px;touch-action:manipulation}
-button:hover{background:#394637}button:disabled{opacity:.35;cursor:default}
+button{cursor:pointer;border:1px solid transparent;border-radius:12px;background:#2d382e;color:var(--ink);min-height:56px;min-width:56px;padding:9px 14px;touch-action:manipulation}
+@media(hover:hover){button:hover{background:#394637}}button:disabled{opacity:.35;cursor:default}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 main{width:100%;max-width:900px;margin:0 auto;flex:1;min-height:0;display:flex;flex-direction:column;padding:0}
 #app{flex:1;min-height:0;display:flex;flex-direction:column}
@@ -16,15 +16,15 @@ h1{font-size:28px;font-weight:550;line-height:1.2;margin:8px 0}h2{font-size:18px
 #chapters-panel>.section-heading{flex-shrink:0;min-height:56px;margin:0 4px;gap:8px}#chapters-panel .section-heading>div{display:flex;align-items:baseline;gap:10px;min-width:0}
 #book-title{font-size:15px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}#chapter-count{white-space:nowrap}
 ol{list-style:none;margin:0;padding:0}#chapters{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 0 8px;scrollbar-width:thin}
-#chapters button{display:flex;align-items:center;gap:16px;background:transparent;text-align:left;width:100%;padding:11px 12px;min-height:48px;font-size:15px;border-radius:10px}
-#chapters button span:first-child{color:var(--muted);font-size:12px;min-width:26px;font-variant-numeric:tabular-nums}#chapters button span:last-child{overflow-wrap:anywhere}
+#chapters button{display:flex;align-items:center;gap:16px;background:transparent;text-align:left;width:100%;padding:16px 14px;min-height:60px;font-size:16px;border-radius:10px}
+#chapters button span:first-child{color:var(--muted);font-size:14px;min-width:28px;font-variant-numeric:tabular-nums}#chapters button span:last-child{overflow-wrap:anywhere}
 #chapters button.active{background:#2b392a;color:var(--accent)}#chapters button.active span:first-child{color:var(--accent)}
 .player{order:1;flex-shrink:0;background:var(--panel);border-top:1px solid var(--line);padding:10px max(20px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
 .now-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}.player h2{font-size:16px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 #settings-btn{flex-shrink:0;font-size:18px;letter-spacing:2px;padding:4px 8px}#status{font-size:12px;margin:0 0 4px}.muted{font-size:14px;color:var(--muted)}
 .timeline{margin:0 0 4px}.timeline input{display:block;width:100%;accent-color:var(--accent);height:28px;margin:0;padding:0}.timeline div{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;line-height:16px;font-variant-numeric:tabular-nums}
-.transport{display:flex;justify-content:center;align-items:center;gap:38px;min-height:62px}.transport button{position:relative;min-width:52px;min-height:52px;padding:5px;background:transparent;font-size:23px}.transport small{display:block;font-size:10px;line-height:11px}
-.transport .play{width:58px;height:58px;border-radius:50%;background:var(--accent);color:#202b1c;font-size:23px}
+.transport{display:flex;justify-content:center;align-items:center;gap:28px;min-height:80px}.transport button{position:relative;min-width:68px;min-height:68px;padding:5px;background:transparent;font-size:23px}.transport small{display:block;font-size:12px;line-height:16px}
+.transport .play{width:76px;height:76px;border-radius:50%;background:var(--accent);color:#202b1c;font-size:23px}
 .fine{font-size:12px;color:var(--muted)}#timer-status{margin:4px 0 0;text-align:center;font-size:11px}
 .text-btn{background:transparent;color:var(--accent);padding:8px 10px;font-size:13px;white-space:nowrap}.primary{background:var(--accent);color:#202b1c;font-weight:600}.primary:hover{background:#e4f4c6}
 dialog{max-width:500px;width:calc(100% - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;border:1px solid var(--line);border-radius:22px;background:var(--panel);color:var(--ink);padding:22px}dialog::backdrop{background:#0009}
@@ -32,7 +32,7 @@ dialog{max-width:500px;width:calc(100% - 32px);max-height:calc(100dvh - 32px);ov
 #library-dialog footer{display:flex;justify-content:flex-end;margin-top:16px;border-top:1px solid var(--line);padding-top:10px}
 #close-library,#close-import,#close-settings{background:transparent;padding:6px}
 .book{width:100%;display:flex;gap:14px;align-items:center;background:transparent;text-align:left;padding:14px 8px}.book+.book{border-top:1px solid var(--line)}.book-icon{width:40px;height:48px;border-radius:5px;background:#394e3c;color:var(--accent);display:grid;place-items:center;flex-shrink:0;font-size:20px}.book strong{display:block;font-weight:500;font-size:15px;overflow-wrap:anywhere}.book small{font-size:12px;color:var(--muted)}.book.active{background:#29352a;border:1px solid #70855c}.empty{text-align:center;padding:20px 0}
-.options{display:grid;gap:12px}.options label{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:15px}.options select{min-height:44px;min-width:140px;background:#2d382e;color:var(--ink);border:0;border-radius:10px;padding:8px 12px}.chapter-actions{display:flex;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}.chapter-actions button{flex:1}
+.options{display:grid;gap:12px}.options label{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:15px}.options select{min-height:52px;min-width:140px;background:#2d382e;color:var(--ink);border:0;border-radius:10px;padding:8px 12px}.chapter-actions{display:flex;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}.chapter-actions button{flex:1}
 #settings-dialog{inset:auto 16px calc(12px + env(safe-area-inset-bottom));margin:0 auto;transform-origin:bottom center}
 .login{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:24px;width:calc(100% - 32px);max-width:490px;max-height:100%;overflow-y:auto;min-height:0;margin:20px auto}.login form{margin-top:24px}
 form>label{display:block;margin:18px 0 7px;font-size:14px}input[type=password],input[type=text],input:not([type]){width:100%;border:1px solid #52624d;border-radius:10px;background:var(--bg);color:var(--ink);padding:12px;min-height:48px}form>.primary{margin-top:24px;width:100%}dialog input[type=file]{width:100%;font-size:14px;padding:12px 0}progress{width:100%;accent-color:var(--accent)}
@@ -40,21 +40,29 @@ form>label{display:block;margin:18px 0 7px;font-size:14px}input[type=password],i
 #status:empty,#timer-status:empty,#login-status:empty,#upload-status:empty{display:none}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}[hidden]{display:none!important}
 @media(min-width:741px){main{padding:12px 20px}.listening-room{border:1px solid var(--line);border-radius:18px}.player{padding-bottom:12px}}
 @media(max-height:500px) and (min-width:600px){.listening-room{flex-direction:row}.player{width:48%;border-top:0;border-left:1px solid var(--line);overflow-y:auto}#chapters-panel{width:52%}}
-@media(prefers-reduced-motion:no-preference){button{transition:background .15s,transform .15s}button:active:not(:disabled){transform:scale(.97)}}
+
 
 /* Local acknowledgement stays inside the existing controls, without shifting layout. */
 .timeline>div{position:relative}
 #seek-feedback{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;color:var(--accent);font-size:12px;font-weight:600;pointer-events:none}
-.transport button:not(.play)[data-feedback],.transport button:not(.play)[data-pressed],#settings-btn[data-feedback],#settings-btn[data-pressed]{background:#36472f;color:var(--accent)}
-.transport .play[data-feedback],.transport .play[data-pressed]{background:#bed394}
-@media(prefers-reduced-motion:no-preference){
- .transport button,#settings-btn{transition:background .15s,transform .18s ease-out}
- .transport button[data-pressed],#settings-btn[data-pressed]{transform:scale(.90);transition:none}
- .transport button:active:not(:disabled){transform:scale(.90)}
-}
-
 .library-actions{display:grid;margin-top:16px;padding-top:8px;border-top:1px solid var(--line)}
-.library-actions button{display:flex;align-items:center;justify-content:space-between;min-height:48px;background:transparent;text-align:left;padding:10px 4px}
+.library-actions button{display:flex;align-items:center;justify-content:space-between;min-height:56px;background:transparent;text-align:left;padding:10px 4px}
 .library-actions button+button{border-top:1px solid var(--line);border-radius:0}
 .library-actions button span{color:var(--muted);font-size:20px}
 .library-actions button:active{background:#36472f}
+
+/* Keep the hit area stable: only its feedback surface compresses under the finger. */
+button{position:relative;isolation:isolate;user-select:none;-webkit-user-select:none}
+button::after{content:"";position:absolute;inset:0;border-radius:inherit;background:currentColor;opacity:0;pointer-events:none;transition:opacity .2s ease-out}
+button[data-pressed]::after{opacity:.13;transition:none}
+button[data-feedback]::after{opacity:.09}
+@media(prefers-reduced-motion:no-preference){
+ button::after{transition:opacity .2s ease-out,transform .28s cubic-bezier(.2,.8,.2,1)}
+ button[data-pressed]::after{transform:scale(.94);transition:opacity 0s,transform .08s ease-out}
+ #chapters button[data-pressed]::after{transform:scale(.985)}
+ button[data-pressed]>span,button[data-pressed]>small{transform:translateY(1px)}
+ button>span,button>small{transition:transform .2s ease-out}
+}
+
+.control-glyph{display:block;line-height:1.1}
+@media(prefers-reduced-motion:no-preference){.transport button>.control-glyph{transition:transform .28s cubic-bezier(.2,.8,.2,1)}.transport button[data-pressed]>.control-glyph{transform:scale(.88);transition-duration:.08s}}
