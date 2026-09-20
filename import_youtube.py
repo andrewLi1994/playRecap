@@ -38,7 +38,7 @@ def main():
     data = ROOT/'data'; data.mkdir(exist_ok=True)
     # No cookies, browser profile access, or third-party stream proxies.
     command = [downloader, '--ignore-config', '--js-runtimes', 'node', '--yes-playlist',
-        '--playlist-items', args.items, '--format', 'bestaudio[ext=m4a]/bestaudio/best',
+        '--playlist-items', args.items, '--check-formats', '--format', 'bestaudio[ext=m4a]/bestaudio/best',
         '--extract-audio', '--audio-format', 'm4a', '--audio-quality', '96K',
         '--embed-metadata', '--no-overwrites', '--no-progress',
         '--download-archive', str(directory/'.download-archive.txt'),
