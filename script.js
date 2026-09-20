@@ -58,7 +58,6 @@ function saveProgress(force = false) {
     persist(); lastSave = Date.now();
     const shelf = $('books').querySelector(`[data-book-id="${currentBook.id}"] small`);
     if (shelf) shelf.textContent = `${currentBook.chapters.length} 章 · ` + (saved.progress[currentBook.id].completed ? '已听完' : `上次听到第 ${index+1} 章 ${format(audio.currentTime)}`);
-    $('save-status').textContent = '已记住 · ' + format(audio.currentTime) + '（当前浏览器）';
 }
 function renderBooks() {
     $('books').replaceChildren(); $('empty').hidden = books.length > 0;
@@ -108,8 +107,7 @@ function selectChapter(i, time = 0, autoplay = true, saveOld = true) {
     $('book-title').textContent = currentBook.title;
     $('chapter-title').textContent = chapter.title;
     $('elapsed').textContent = format(time); $('duration').textContent = '0:00'; $('seek').value = 0;
-    $('save-status').textContent = time ? '从 ' + format(time) + ' 继续听' : '进度保存在当前浏览器。';
-    status(autoplay ? '正在加载音频…' : time ? '已找到上次进度，点击继续听。' : '准备好了，点击播放。');
+    status(autoplay ? '正在加载音频…' : time ? '继续听' : '');
     updateControls(); renderChapters(); renderBooks(); updateMedia();
     if (autoplay) play();
 }
@@ -166,20 +164,20 @@ audio.addEventListener('timeupdate', () => { checkTimer(); saveProgress(); updat
 audio.addEventListener('ended', () => {
     saveProgress(true);
     if (checkTimer()) return;
-    if (stopAfterChapter) { stopAfterChapter = false; $('timer').value = '0'; $('timer-status').textContent = '本章结束，晚安。'; status('本章已听完'); updateControls(); return; }
+    if (stopAfterChapter) { stopAfterChapter = false; $('timer').value = '0'; $('timer-status').textContent = ''; status('本章已听完'); updateControls(); return; }
     if (index+1 < currentBook.chapters.length) selectChapter(index+1);
-    else { status('这本书听完了。'); updateControls(); renderBooks(); }
+    else { status('已听完'); updateControls(); renderBooks(); }
 });
 function checkTimer() {
     if (deadline && Date.now() >= deadline) {
-        deadline = 0; audio.pause(); saveProgress(true); $('timer').value = '0'; $('timer-status').textContent = '时间到了，晚安。'; status('睡眠定时已暂停播放'); return true;
+        deadline = 0; audio.pause(); saveProgress(true); $('timer').value = '0'; $('timer-status').textContent = ''; status('睡眠定时已暂停播放'); return true;
     }
     return false;
 }
 $('timer').addEventListener('change', () => {
     stopAfterChapter = $('timer').value === 'chapter';
     deadline = !stopAfterChapter && Number($('timer').value) > 0 ? Date.now() + Number($('timer').value)*60000 : 0;
-    $('timer-status').textContent = stopAfterChapter ? '本章结束后停止。' : deadline ? `将在 ${new Date(deadline).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} 停止` : '不赶时间，慢慢听。';
+    $('timer-status').textContent = stopAfterChapter ? '本章结束后停止' : deadline ? `将在 ${new Date(deadline).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} 停止` : '';
 });
 setInterval(checkTimer, 1000);
 $('speed').value = ['0.75','1','1.25','1.5','2'].includes(String(saved.speed)) ? String(saved.speed) : '1';
@@ -238,7 +236,7 @@ $('import-form').addEventListener('submit', async e => {
     }
     uploading = false; $('upload-btn').disabled = $('close-import').disabled = false;
     $('upload-progress').value = 100;
-    $('upload-status').textContent = `已导入 ${done} 章。` + (failed.length ? failed.join('；') : '可以开始听了。');
+    $('upload-status').textContent = `已导入 ${done} 章。` + (failed.length ? failed.join('；') : '');
     try { await refresh(); } catch(e) { notice(e.message); }
     if (!failed.length) { $('import-form').reset(); $('import-dialog').close(); notice(`《${book}》已导入 ${done} 章。`); }
 });
