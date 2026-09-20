@@ -9,7 +9,7 @@
 <script src="/script.js" defer></script>
 </head>
 <body>
-<header><a class="brand" href="/">◒ <span>playRecap</span></a><button id="library-btn" class="badge" aria-haspopup="dialog" aria-controls="library-dialog" aria-expanded="false" hidden>私人书库 <span aria-hidden="true">⌄</span></button></header>
+
 <main>
 <section id="login" class="login panel" hidden>
 <h1>私人书库</h1>
@@ -21,7 +21,7 @@
 <div class="listening-room panel">
 <section class="player" aria-label="音频播放器">
 
-<div class="now-heading"><h2 id="chapter-title">暂无音频</h2><button id="settings-btn" class="text-btn" aria-label="更多播放设置" aria-haspopup="dialog" aria-controls="settings-dialog">•••</button></div><p id="status" role="status" class="muted"></p>
+<div class="now-heading"><h2 id="chapter-title">暂无音频</h2><button id="settings-btn" class="text-btn" aria-label="更多选项" aria-haspopup="dialog" aria-controls="settings-dialog">•••</button></div><p id="status" role="status" class="muted"></p>
 <audio id="audio" preload="metadata" playsinline></audio>
 <div class="timeline"><label class="sr-only" for="seek">播放进度</label><input type="range" id="seek" min="0" max="100" value="0" step="0.1" disabled><div><span id="elapsed">0:00</span><span id="seek-feedback" role="status" aria-live="polite" aria-atomic="true"></span><span id="duration">0:00</span></div></div>
 <div class="transport"><button id="back" aria-label="后退 15 秒" disabled>↶<small>15</small></button><button id="play" class="play" aria-label="播放" disabled>▶</button><button id="forward" aria-label="前进 15 秒" disabled>↷<small>15</small></button></div>
@@ -33,8 +33,8 @@
 </div>
 <p id="notice" role="status" class="notice" hidden></p>
 </main>
-<dialog id="library-dialog" aria-labelledby="library-heading"><div class="section-heading"><h2 id="library-heading">私人书库</h2><button id="close-library" type="button" aria-label="关闭书库">✕</button></div><button id="add-btn" class="primary">＋ 导入音频</button><div class="section-heading"><h2>我的书架</h2><button id="refresh" class="text-btn">刷新</button></div><div id="books"></div><div id="empty" class="empty"><h3>暂无音频</h3><button id="empty-add" class="text-btn">导入音频</button></div><footer><button id="logout" class="text-btn">锁定书库</button></footer></dialog>
-<dialog id="settings-dialog" aria-labelledby="settings-heading"><div class="section-heading"><h2 id="settings-heading">播放设置</h2><button id="close-settings" type="button" aria-label="关闭播放设置">✕</button></div><div class="options"><label>倍速<select id="speed" aria-label="倍速"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label><label>睡眠定时<select id="timer" aria-label="睡眠定时"><option value="0">关闭</option><option value="15">15 分钟</option><option value="30">30 分钟</option><option value="45">45 分钟</option><option value="60">60 分钟</option><option value="chapter">本章结束</option></select></label></div>
-<div class="chapter-actions"><button id="prev" disabled>上一章</button><button id="next" disabled>下一章</button></div></dialog>
+<dialog id="library-dialog" aria-labelledby="library-heading"><div class="section-heading"><h2 id="library-heading">私人书库</h2><button id="close-library" type="button" aria-label="关闭书库">✕</button></div><div class="section-heading"><h2>我的书架</h2><button id="refresh" class="text-btn">刷新</button></div><div id="books"></div><div id="empty" class="empty"><h3>暂无音频</h3><button id="empty-add" class="text-btn">导入音频</button></div><footer><button id="logout" class="text-btn">锁定书库</button></footer></dialog>
+<dialog id="settings-dialog" aria-labelledby="settings-heading"><div class="section-heading"><h2 id="settings-heading">更多</h2><button id="close-settings" type="button" aria-label="关闭更多选项">✕</button></div><div class="options"><label>倍速<select id="speed" aria-label="倍速"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label><label>睡眠定时<select id="timer" aria-label="睡眠定时"><option value="0">关闭</option><option value="15">15 分钟</option><option value="30">30 分钟</option><option value="45">45 分钟</option><option value="60">60 分钟</option><option value="chapter">本章结束</option></select></label></div>
+<div class="chapter-actions"><button id="prev" disabled>上一章</button><button id="next" disabled>下一章</button></div><div class="library-actions"><button id="library-btn" aria-haspopup="dialog" aria-controls="library-dialog" aria-expanded="false">书库 <span aria-hidden="true">›</span></button><button id="add-btn" aria-haspopup="dialog" aria-controls="import-dialog">导入音频 <span aria-hidden="true">＋</span></button></div></dialog>
 <dialog id="import-dialog" aria-labelledby="import-heading"><form id="import-form"><div class="section-heading"><h2 id="import-heading">导入音频</h2><button id="close-import" type="button" aria-label="关闭">✕</button></div><label for="book-name">书名</label><input id="book-name" maxlength="70" placeholder="例如：睡前故事" required><label for="files">章节音频</label><input id="files" type="file" accept="audio/*,.m4a,.mp4" multiple required><p id="file-list" class="fine">MP3 / M4A · 按文件名排序</p><progress id="upload-progress" max="100" value="0" hidden></progress><p id="upload-status" role="status" class="muted"></p><button id="upload-btn" type="submit" class="primary">导入书库</button></form></dialog>
 </body></html>

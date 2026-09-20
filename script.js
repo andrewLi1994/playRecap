@@ -245,9 +245,9 @@ $('logout').addEventListener('click', async () => {
     try { await api('/api/logout', {}); audio.removeAttribute('src'); audio.load(); currentBook = null; index = -1; showLogin(); }
     catch (e) { notice(e.message); }
 });
-$('library-btn').addEventListener('click', () => { $('library-dialog').showModal(); $('library-btn').setAttribute('aria-expanded', 'true'); });
+$('library-btn').addEventListener('click', () => { $('settings-dialog').close(); $('library-dialog').showModal(); $('library-btn').setAttribute('aria-expanded', 'true'); });
 $('close-library').addEventListener('click', () => $('library-dialog').close());
-$('library-dialog').addEventListener('close', () => $('library-btn').setAttribute('aria-expanded', 'false'));
+$('library-dialog').addEventListener('close', () => { $('library-btn').setAttribute('aria-expanded', 'false'); if (!$('app').hidden) $('settings-btn').focus(); });
 $('library-dialog').addEventListener('click', e => {
     if (e.target !== $('library-dialog')) return;
     const r = e.target.getBoundingClientRect();
@@ -256,7 +256,8 @@ $('library-dialog').addEventListener('click', e => {
 $('settings-btn').addEventListener('click', () => $('settings-dialog').showModal());
 $('close-settings').addEventListener('click', () => $('settings-dialog').close());
 $('current-chapter').addEventListener('click', () => $('chapters').querySelector('[aria-current="true"]')?.scrollIntoView({block: 'nearest'}));
-function openImport() { $('library-dialog').close(); $('import-dialog').showModal(); }
+function openImport() { $('settings-dialog').close(); $('library-dialog').close(); $('import-dialog').showModal(); }
+$('import-dialog').addEventListener('close', () => { if (!$('app').hidden) $('settings-btn').focus(); });
 $('add-btn').addEventListener('click', openImport); $('empty-add').addEventListener('click', openImport);
 $('close-import').addEventListener('click', () => { if (!uploading) $('import-dialog').close(); });
 $('import-dialog').addEventListener('cancel', e => { if (uploading) e.preventDefault(); });
