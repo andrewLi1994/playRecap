@@ -27,7 +27,9 @@ class ServerTests(unittest.TestCase):
         r = connection.getresponse(); result = r.status, dict(r.getheaders()), r.read(); connection.close(); return result
     def login(self):
         status, headers, _ = self.request('POST','/api/login',json.dumps({'code':self.server.code}))
-        self.assertEqual(status, 200); self.cookie = headers['Set-Cookie'].split(';')[0]
+        self.assertEqual(status, 200)
+        self.assertIn('Max-Age=315360000', headers['Set-Cookie'])
+        self.cookie = headers['Set-Cookie'].split(';')[0]
     def upload(self, name='02.mp3', content=b'abcdefghij', book='Book'):
         return self.request('POST','/api/upload',content,{'X-Book-Name':book,'X-File-Name':name})
     def test_auth_and_private_paths(self):

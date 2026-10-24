@@ -14,7 +14,7 @@ class Bucket {
 }
 function environment(){return {ACCESS_CODE:'a-very-long-test-code-for-local-tests',AUDIO:new Bucket(),LOGIN_LIMITER:{limit:async()=>({success:true})},ASSETS:{fetch:async()=>new Response('<html>Login</html>')}};}
 async function call(env,path,options={}){return worker.fetch(new Request('https://test.example'+path,options),env);}
-async function login(env){const body=JSON.stringify({code:env.ACCESS_CODE});const response=await call(env,'/api/login',{method:'POST',headers:{'X-Recap-Request':'1','Content-Length':String(body.length)},body});assert.equal(response.status,200);assert.match(response.headers.get('Set-Cookie'),/HttpOnly; Secure; SameSite=Strict/);return response.headers.get('Set-Cookie').split(';')[0];}
+async function login(env){const body=JSON.stringify({code:env.ACCESS_CODE});const response=await call(env,'/api/login',{method:'POST',headers:{'X-Recap-Request':'1','Content-Length':String(body.length)},body});assert.equal(response.status,200);assert.match(response.headers.get('Set-Cookie'),/HttpOnly; Secure; SameSite=Strict; Path=\/; Max-Age=315360000/);return response.headers.get('Set-Cookie').split(';')[0];}
 async function upload(env,cookie,name='01.m4a',book='Book',body='abcdefghij'){
  return call(env,'/api/upload',{method:'POST',headers:{Cookie:cookie,'X-Recap-Request':'1','X-Book-Name':encodeURIComponent(book),'X-File-Name':encodeURIComponent(name),'Content-Length':String(body.length)},body});
 }

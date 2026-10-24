@@ -3,6 +3,7 @@ const MIME = {mp3:'audio/mpeg',m4a:'audio/mp4',mp4:'audio/mp4',aac:'audio/aac',w
 const STATIC = new Set(['/','/index.html','/script.js','/styles.css','/icon.svg','/manifest.webmanifest','/apple-touch-icon.png','/icon-192.png','/icon-512.png']);
 const MAX_FILE = 80 * 1024 * 1024;
 const MAX_LIBRARY = 8 * 1000 ** 3; // Application guardrail, not an account billing cap.
+const SESSION_SECONDS = 10 * 365 * 86400;
 const security = {
  'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer',
  'Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
@@ -78,8 +79,8 @@ async function route(request,env) {
    const actual=await digest(data.code),expected=await digest(env.ACCESS_CODE);
    let difference=0;for(let i=0;i<actual.length;i++)difference|=actual.charCodeAt(i)^expected.charCodeAt(i);
    if(difference)return json({error:'口令不正确。'},401);
-   const expiry=String(Math.floor(Date.now()/1000)+30*86400);
-   return json({ok:true},200,{'Set-Cookie':`recap_session=${expiry}.${await signed(env.ACCESS_CODE,expiry)}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=2592000`});
+   const expiry=String(Math.floor(Date.now()/1000)+SESSION_SECONDS);
+   return json({ok:true},200,{'Set-Cookie':`recap_session=${expiry}.${await signed(env.ACCESS_CODE,expiry)}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${SESSION_SECONDS}`});
   }
  }
  if(!await authenticated(request,env.ACCESS_CODE))return json({error:'请先输入私人访问口令。'},401);

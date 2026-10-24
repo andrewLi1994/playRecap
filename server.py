@@ -20,6 +20,7 @@ EXTENSIONS = {'.mp3', '.m4a', '.aac', '.wav', '.ogg', '.opus', '.flac', '.mp4'}
 MIME = {'.m4a': 'audio/mp4', '.mp3': 'audio/mpeg', '.aac': 'audio/aac'}
 STATIC = {'/': 'index.html', '/index.html': 'index.html', '/script.js': 'script.js', '/styles.css': 'styles.css', '/icon.svg': 'icon.svg', '/manifest.webmanifest': 'manifest.webmanifest', '/apple-touch-icon.png': 'apple-touch-icon.png', '/icon-192.png': 'icon-192.png', '/icon-512.png': 'icon-512.png'}
 MAX_UPLOAD = 2 * 1024 ** 3
+SESSION_SECONDS = 10 * 365 * 86400
 
 def natural(value):
     return [int(x) if x.isdigit() else x.casefold() for x in re.split(r'(\d+)', value)]
@@ -130,9 +131,9 @@ class Handler(BaseHTTPRequestHandler):
                 supplied = data.get('code', '')
                 if not isinstance(supplied, str) or not hmac.compare_digest(supplied.encode(), self.server.code.encode()):
                     return self.reply(401, {'error': '口令不正确。'})
-                expiry = str(int(now + 30 * 86400))
+                expiry = str(int(now + SESSION_SECONDS))
                 signature = hmac.new(self.server.code.encode(), expiry.encode(), hashlib.sha256).hexdigest()
-                cookie = f'recap_session={expiry}.{signature}; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000'
+                cookie = f'recap_session={expiry}.{signature}; HttpOnly; SameSite=Strict; Path=/; Max-Age={SESSION_SECONDS}'
                 if self.server.secure: cookie += '; Secure'
                 return self.reply(200, {'ok': True}, {'Set-Cookie': cookie})
             if not self.authenticated():
