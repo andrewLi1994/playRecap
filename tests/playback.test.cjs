@@ -17,7 +17,8 @@ function app() {
  class Audio extends Element {
   constructor(){super();this.paused=true;this.currentTime=0;this.duration=600;this.readyState=1;this.playbackRate=1;this.defaultPlaybackRate=1;}
   set src(value){this.sourceChanges=(this.sourceChanges||0)+1;this.source=value;this.currentTime=0;this.readyState=0;this.ended=false;this.playbackRate=this.defaultPlaybackRate;}
-  play(){this.paused=false;this.emit('play');return Promise.resolve();}
+  load(){this.loadCalls=(this.loadCalls||0)+1;this.readyState=0;}
+  play(){this.playCalls=(this.playCalls||0)+1;this.paused=false;this.emit('play');return Promise.resolve();}
   pause(){if(!this.paused){this.paused=true;this.emit('pause');}}
   metadata(){this.readyState=1;this.emit('loadedmetadata');}
  }
@@ -50,7 +51,9 @@ test('A sleep deadline stops playback after a suspended timer and prevents auto-
 test('End-of-chapter stops while ordinary ended advances with the selected speed',()=>{
  const a=app();a.elements.timer.value='chapter';a.elements.timer.emit('change');a.elements.audio.ended=true;a.elements.audio.paused=true;a.elements.audio.emit('ended');
  assert.equal(a.elements.audio.source,'/a');assert.equal(a.elements.timer.value,'0');
- a.elements.speed.value='1.5';a.elements.speed.emit('change');a.elements.audio.emit('ended');a.elements.audio.metadata();
+ a.elements.speed.value='1.5';a.elements.speed.emit('change');const starts=a.elements.audio.playCalls||0;a.elements.audio.emit('ended');
+ assert.equal(a.elements.audio.source,'/b');assert.equal(a.elements.audio.paused,true);assert.equal(a.elements.audio.playCalls||0,starts);
+ a.elements.audio.metadata();assert.equal(a.elements.audio.playCalls,starts+1);
  assert.equal(a.elements.audio.source,'/b');assert.equal(a.elements.audio.playbackRate,1.5);assert.equal(a.elements.audio.paused,false);
 });
 test('A new chapter owns its zero position immediately, before metadata arrives',()=>{

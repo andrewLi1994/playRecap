@@ -15,7 +15,7 @@ let saved = {};
 try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch {}
 if (!saved || typeof saved !== 'object' || Array.isArray(saved)) saved = {};
 saved.progress ||= {};
-let books = [], currentBook = null, index = -1, pendingSeek = null, generation = 0;
+let books = [], currentBook = null, index = -1, pendingSeek = null, pendingAutoplay = null, generation = 0;
 let deadline = 0, stopAfterChapter = false, lastSave = 0, uploading = false;
 const status = text => $('status').textContent = text;
 function notice(text) { $('notice').textContent = text; $('notice').hidden = !text; }
@@ -112,22 +112,26 @@ function selectBook(book, autoplay) {
     if (i < 0) i = 0;
     selectChapter(i, progress?.completed ? 0 : Number(progress?.time) || 0, autoplay, false);
 }
-function selectChapter(i, time = 0, autoplay = true, saveOld = true) {
+function selectChapter(i, time = 0, autoplay = true, saveOld = true, waitForMetadata = false) {
     if (!currentBook || !currentBook.chapters[i]) return;
     if (saveOld) saveProgress(true);
     audio.pause(); index = i; generation++; pendingSeek = Math.max(0, time);
+    pendingAutoplay = autoplay && waitForMetadata ? generation : null;
     const chapter = currentBook.chapters[i];
     saved.lastBook = currentBook.id;
     saved.progress[currentBook.id] = {chapterId: chapter.id, time: pendingSeek, completed: false};
     persist();
     audio.defaultPlaybackRate = Number($('speed').value);
     audio.src = chapter.url; audio.playbackRate = audio.defaultPlaybackRate;
+    // A fresh load avoids an occasional silent decoder after iOS Safari changes
+    // sources from inside the previous chapter's ended event.
+    audio.load();
     $('book-title').textContent = currentBook.title;
     $('chapter-title').textContent = `第 ${i+1} 章 · ${chapterLabel(currentBook, chapter, i)}`;
     $('elapsed').textContent = format(time); $('duration').textContent = '0:00'; $('seek').value = 0;
     status(autoplay ? '正在加载音频…' : '');
     updateControls(); renderChapters(); renderBooks(); updateMedia();
-    if (autoplay) play();
+    if (autoplay && !waitForMetadata) play();
 }
 function play() {
     if (!currentBook || index < 0) return;
@@ -170,9 +174,13 @@ if ('mediaSession' in navigator) for (const [action, handler] of Object.entries(
 audio.addEventListener('loadedmetadata', () => {
     if (pendingSeek !== null) {
         const time = Number.isFinite(audio.duration) ? Math.min(pendingSeek, Math.max(0,audio.duration-.25)) : pendingSeek;
-        audio.currentTime = time; pendingSeek = null;
+        // The new source already starts at zero. Avoid an unnecessary seek while
+        // iOS is attaching its decoder during an automatic chapter transition.
+        if (time > 0) audio.currentTime = time;
+        pendingSeek = null;
     }
     updateControls(); updatePosition();
+    if (pendingAutoplay === generation) { pendingAutoplay = null; play(); }
 });
 audio.addEventListener('playing', () => { if (!checkTimer()) status(''); updateControls(); });
 audio.addEventListener('play', updateControls);
@@ -184,7 +192,10 @@ audio.addEventListener('ended', () => {
     saveProgress(true);
     if (checkTimer()) return;
     if (stopAfterChapter) { stopAfterChapter = false; $('timer').value = '0'; $('timer-status').textContent = ''; status('本章已听完'); updateControls(); return; }
-    if (index+1 < currentBook.chapters.length) selectChapter(index+1);
+    // Let the new source finish replacing the ended source before asking iOS to
+    // play it. Starting in the same ended callback can produce silent playback
+    // even though currentTime continues to advance.
+    if (index+1 < currentBook.chapters.length) selectChapter(index+1, 0, true, true, true);
     else { status('已听完'); updateControls(); renderBooks(); }
 });
 function checkTimer() {
