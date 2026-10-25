@@ -92,3 +92,15 @@ test('Another chapter starts normally, and an errored current chapter can retry'
  a.elements.chapters.children[1].children[0].emit('click');
  assert.equal(a.elements.audio.sourceChanges,loads+1);
 });
+test('A continuous book crosses chapter boundaries without replacing its audio source',()=>{
+ const a=app();
+ a.run("books[0].streamUrl='/stream/book/index.m3u8';books[0].chapters[0].start=0;books[0].chapters[0].duration=600;books[0].chapters[1].start=600;books[0].chapters[1].duration=600;currentBook=null;index=-1;loadedStreamBook=null;selectBook(books[0],true)");
+ a.elements.audio.duration=1200;a.elements.audio.metadata();
+ const loads=a.elements.audio.sourceChanges;
+ assert.equal(a.elements.audio.source,'/stream/book/index.m3u8');assert.equal(a.elements.audio.paused,false);
+ a.elements.audio.currentTime=601;a.elements.audio.emit('timeupdate');
+ assert.equal(a.run('index'),1);assert.equal(a.elements.audio.sourceChanges,loads);assert.equal(a.elements.audio.paused,false);
+ assert.equal(JSON.parse(a.store.playrecap_private_v1).progress.one.time,1);
+ a.run('selectChapter(0)');
+ assert.equal(a.elements.audio.currentTime,0);assert.equal(a.elements.audio.sourceChanges,loads);
+});

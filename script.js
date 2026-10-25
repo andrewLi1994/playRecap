@@ -15,7 +15,7 @@ let saved = {};
 try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch {}
 if (!saved || typeof saved !== 'object' || Array.isArray(saved)) saved = {};
 saved.progress ||= {};
-let books = [], currentBook = null, index = -1, pendingSeek = null, pendingAutoplay = null, generation = 0;
+let books = [], currentBook = null, index = -1, pendingSeek = null, pendingAutoplay = null, loadedStreamBook = null, generation = 0;
 let deadline = 0, stopAfterChapter = false, lastSave = 0, uploading = false;
 const status = text => $('status').textContent = text;
 function notice(text) { $('notice').textContent = text; $('notice').hidden = !text; }
@@ -28,6 +28,12 @@ function format(seconds) {
     const h = Math.floor(seconds / 3600), m = Math.floor(seconds % 3600 / 60), s = seconds % 60;
     return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0');
 }
+function hasContinuousStream(book = currentBook) {
+    return !!book?.streamUrl && book.chapters.every(chapter => Number.isFinite(chapter.start) && Number.isFinite(chapter.duration) && chapter.start >= 0 && chapter.duration > 0);
+}
+function chapterStart(i = index) { return hasContinuousStream() ? currentBook.chapters[i]?.start || 0 : 0; }
+function chapterDuration(i = index) { return hasContinuousStream() ? currentBook.chapters[i]?.duration || 0 : audio.duration; }
+function chapterTime() { return Math.max(0, audio.currentTime - chapterStart()); }
 async function api(path, body) {
     const res = await fetch(path, body === undefined ? {} : {
         method: 'POST', headers: {'Content-Type': 'application/json', 'X-Recap-Request': '1'}, body: JSON.stringify(body)
@@ -50,7 +56,7 @@ async function refresh() {
         const updated = books.find(b => b.id === currentBook.id);
         const updatedIndex = updated?.chapters.findIndex(c => c.id === chapterId) ?? -1;
         if (updatedIndex >= 0) { currentBook = updated; index = updatedIndex; renderChapters(); }
-        else { audio.pause(); currentBook = null; index = -1; audio.removeAttribute('src'); audio.load(); status('当前音频已被移走，请重新选择。'); renderChapters(); }
+        else { audio.pause(); currentBook = null; index = -1; loadedStreamBook = null; audio.removeAttribute('src'); audio.load(); status('当前音频已被移走，请重新选择。'); renderChapters(); }
     }
     renderBooks();
     if (!currentBook && books.length) {
@@ -62,11 +68,11 @@ async function refresh() {
 function saveProgress(force = false) {
     if (!currentBook || index < 0 || pendingSeek !== null || audio.readyState === 0) return;
     if (!force && Date.now() - lastSave < 3000) return;
-    saved.progress[currentBook.id] = {chapterId: currentBook.chapters[index].id, time: audio.currentTime, completed: audio.ended && index === currentBook.chapters.length-1};
+    saved.progress[currentBook.id] = {chapterId: currentBook.chapters[index].id, time: chapterTime(), completed: audio.ended && index === currentBook.chapters.length-1};
     saved.lastBook = currentBook.id;
     persist(); lastSave = Date.now();
     const shelf = $('books').querySelector(`[data-book-id="${currentBook.id}"] small`);
-    if (shelf) shelf.textContent = `${currentBook.chapters.length} 章 · ` + (saved.progress[currentBook.id].completed ? '已听完' : `上次听到第 ${index+1} 章 ${format(audio.currentTime)}`);
+    if (shelf) shelf.textContent = `${currentBook.chapters.length} 章 · ` + (saved.progress[currentBook.id].completed ? '已听完' : `上次听到第 ${index+1} 章 ${format(chapterTime())}`);
 }
 function renderBooks() {
     $('books').replaceChildren(); $('empty').hidden = books.length > 0;
@@ -115,23 +121,32 @@ function selectBook(book, autoplay) {
 function selectChapter(i, time = 0, autoplay = true, saveOld = true, waitForMetadata = false) {
     if (!currentBook || !currentBook.chapters[i]) return;
     if (saveOld) saveProgress(true);
-    audio.pause(); index = i; generation++; pendingSeek = Math.max(0, time);
+    const continuous = hasContinuousStream();
+    const sameStream = continuous && loadedStreamBook === currentBook.id;
+    if (!sameStream) audio.pause();
+    index = i; generation++;
+    const localTime = Math.max(0, time);
+    pendingSeek = sameStream ? null : chapterStart(i) + localTime;
     pendingAutoplay = autoplay && waitForMetadata ? generation : null;
     const chapter = currentBook.chapters[i];
     saved.lastBook = currentBook.id;
-    saved.progress[currentBook.id] = {chapterId: chapter.id, time: pendingSeek, completed: false};
+    saved.progress[currentBook.id] = {chapterId: chapter.id, time: localTime, completed: false};
     persist();
     audio.defaultPlaybackRate = Number($('speed').value);
-    audio.src = chapter.url; audio.playbackRate = audio.defaultPlaybackRate;
-    // A fresh load avoids an occasional silent decoder after iOS Safari changes
-    // sources from inside the previous chapter's ended event.
-    audio.load();
+    if (sameStream) {
+        audio.currentTime = chapterStart(i) + Math.min(localTime, chapterDuration(i));
+    } else {
+        audio.src = continuous ? currentBook.streamUrl : chapter.url;
+        loadedStreamBook = continuous ? currentBook.id : null;
+        audio.playbackRate = audio.defaultPlaybackRate;
+        audio.load();
+    }
     $('book-title').textContent = currentBook.title;
     $('chapter-title').textContent = `第 ${i+1} 章 · ${chapterLabel(currentBook, chapter, i)}`;
     $('elapsed').textContent = format(time); $('duration').textContent = '0:00'; $('seek').value = 0;
     status(autoplay ? '正在加载音频…' : '');
     updateControls(); renderChapters(); renderBooks(); updateMedia();
-    if (autoplay && !waitForMetadata) play();
+    if (autoplay && (!waitForMetadata || continuous)) play();
 }
 function play() {
     if (!currentBook || index < 0) return;
@@ -154,22 +169,24 @@ function updateControls() {
     try { if ('mediaSession' in navigator) navigator.mediaSession.playbackState = audio.paused ? 'paused' : 'playing'; } catch {}
 }
 function seekTo(time) {
-    if (!Number.isFinite(audio.duration) || pendingSeek !== null) return false;
-    audio.currentTime = Math.max(0, Math.min(time, audio.duration)); saveProgress(true); updatePosition();
+    const duration = chapterDuration();
+    if (!Number.isFinite(duration) || pendingSeek !== null) return false;
+    audio.currentTime = chapterStart() + Math.max(0, Math.min(time, duration)); saveProgress(true); updatePosition();
     return true;
 }
 function updatePosition() {
-    $('elapsed').textContent = format(audio.currentTime); $('duration').textContent = format(audio.duration);
-    if (document.activeElement !== $('seek')) $('seek').value = Number.isFinite(audio.duration) && audio.duration ? audio.currentTime / audio.duration * 100 : 0;
+    const position = chapterTime(), duration = chapterDuration();
+    $('elapsed').textContent = format(position); $('duration').textContent = format(duration);
+    if (document.activeElement !== $('seek')) $('seek').value = Number.isFinite(duration) && duration ? position / duration * 100 : 0;
     try {
-        if (navigator.mediaSession?.setPositionState && Number.isFinite(audio.duration) && audio.duration > 0) navigator.mediaSession.setPositionState({duration: audio.duration, playbackRate: audio.playbackRate, position: Math.min(audio.currentTime, audio.duration)});
+        if (navigator.mediaSession?.setPositionState && Number.isFinite(duration) && duration > 0) navigator.mediaSession.setPositionState({duration, playbackRate: audio.playbackRate, position: Math.min(position, duration)});
     } catch {}
 }
 function updateMedia() {
     if (!('mediaSession' in navigator) || !currentBook || typeof MediaMetadata === 'undefined') return;
     navigator.mediaSession.metadata = new MediaMetadata({title: currentBook.chapters[index].title, artist: currentBook.title, album: 'playRecap · 私人听书', artwork: [{src: new URL('/icon.svg', location.href).href, sizes:'128x128', type:'image/svg+xml'}]});
 }
-const mediaActions = {play, pause: () => audio.pause(), previoustrack: () => selectChapter(index-1), nexttrack: () => selectChapter(index+1), seekbackward: d => seekTo(audio.currentTime-(d.seekOffset || 15)), seekforward: d => seekTo(audio.currentTime+(d.seekOffset || 15)), seekto: d => seekTo(d.seekTime)};
+const mediaActions = {play, pause: () => audio.pause(), previoustrack: () => selectChapter(index-1), nexttrack: () => selectChapter(index+1), seekbackward: d => seekTo(chapterTime()-(d.seekOffset || 15)), seekforward: d => seekTo(chapterTime()+(d.seekOffset || 15)), seekto: d => seekTo(d.seekTime)};
 if ('mediaSession' in navigator) for (const [action, handler] of Object.entries(mediaActions)) { try { navigator.mediaSession.setActionHandler(action, handler); } catch {} }
 audio.addEventListener('loadedmetadata', () => {
     if (pendingSeek !== null) {
@@ -182,20 +199,38 @@ audio.addEventListener('loadedmetadata', () => {
     updateControls(); updatePosition();
     if (pendingAutoplay === generation) { pendingAutoplay = null; play(); }
 });
+function syncContinuousChapter() {
+    if (!hasContinuousStream() || pendingSeek !== null) return false;
+    let next = index;
+    for (let i = 0; i < currentBook.chapters.length; i++) {
+        if (audio.currentTime + .05 >= currentBook.chapters[i].start) next = i;
+        else break;
+    }
+    if (next === index) return false;
+    if (stopAfterChapter && next > index) {
+        audio.pause(); audio.currentTime = currentBook.chapters[next].start;
+        stopAfterChapter = false; $('timer').value = '0'; $('timer-status').textContent = ''; status('本章已听完'); updateControls();
+        return true;
+    }
+    index = next;
+    const chapter = currentBook.chapters[index];
+    saved.progress[currentBook.id] = {chapterId: chapter.id, time: chapterTime(), completed: false};
+    persist();
+    $('chapter-title').textContent = `第 ${index+1} 章 · ${chapterLabel(currentBook, chapter, index)}`;
+    renderChapters(); renderBooks(); updateMedia(); updateControls();
+    return true;
+}
 audio.addEventListener('playing', () => { if (!checkTimer()) status(''); updateControls(); });
 audio.addEventListener('play', updateControls);
 audio.addEventListener('pause', () => { saveProgress(true); updateControls(); if (!audio.ended) status(''); });
 audio.addEventListener('waiting', () => { if (!audio.paused) status('正在缓冲…'); });
 audio.addEventListener('error', () => { status('音频加载失败。请检查网络或文件，点击播放重试。'); updateControls(); });
-audio.addEventListener('timeupdate', () => { checkTimer(); saveProgress(); updatePosition(); });
+audio.addEventListener('timeupdate', () => { checkTimer(); syncContinuousChapter(); saveProgress(); updatePosition(); });
 audio.addEventListener('ended', () => {
     saveProgress(true);
     if (checkTimer()) return;
     if (stopAfterChapter) { stopAfterChapter = false; $('timer').value = '0'; $('timer-status').textContent = ''; status('本章已听完'); updateControls(); return; }
-    // Let the new source finish replacing the ended source before asking iOS to
-    // play it. Starting in the same ended callback can produce silent playback
-    // even though currentTime continues to advance.
-    if (index+1 < currentBook.chapters.length) selectChapter(index+1, 0, true, true, true);
+    if (!hasContinuousStream() && index+1 < currentBook.chapters.length) selectChapter(index+1, 0, true, true, true);
     else { status('已听完'); updateControls(); renderBooks(); }
 });
 function checkTimer() {
@@ -216,9 +251,9 @@ $('play').addEventListener('click', () => audio.paused ? play() : audio.pause())
 $('prev').addEventListener('click', () => { selectChapter(index-1); $('settings-dialog').close(); }); $('next').addEventListener('click', () => { selectChapter(index+1); $('settings-dialog').close(); });
 let seekFeedbackTimer;
 function skipBy(seconds) {
-    const before = audio.currentTime;
+    const before = chapterTime();
     const moved = seekTo(before + seconds);
-    const delta = audio.currentTime - before;
+    const delta = chapterTime() - before;
     const feedback = $('seek-feedback');
     feedback.textContent = !moved ? '音频加载中' : Math.abs(delta) < .01 ? (seconds < 0 ? '已到开头' : '已到结尾') : `${delta > 0 ? '＋' : '−'}${Number(Math.abs(delta).toFixed(1))} 秒`;
     clearTimeout(seekFeedbackTimer);
@@ -251,8 +286,8 @@ document.addEventListener('click', e => {
     clearTimeout(feedbackTimers.get(button));
     feedbackTimers.set(button, setTimeout(() => { delete button.dataset.feedback; }, 240));
 }, true);
-$('seek').addEventListener('input', () => { $('elapsed').textContent = format(Number($('seek').value)*audio.duration/100); });
-$('seek').addEventListener('change', () => seekTo(Number($('seek').value)*audio.duration/100));
+$('seek').addEventListener('input', () => { $('elapsed').textContent = format(Number($('seek').value)*chapterDuration()/100); });
+$('seek').addEventListener('change', () => seekTo(Number($('seek').value)*chapterDuration()/100));
 window.addEventListener('pagehide', () => saveProgress(true));
 document.addEventListener('visibilitychange', () => { checkTimer(); saveProgress(true); });
 $('refresh').addEventListener('click', () => refresh().catch(e => notice(e.message)));
@@ -263,7 +298,7 @@ $('login-form').addEventListener('submit', async e => {
 });
 $('logout').addEventListener('click', async () => {
     audio.pause(); saveProgress(true);
-    try { await api('/api/logout', {}); audio.removeAttribute('src'); audio.load(); currentBook = null; index = -1; showLogin(); }
+    try { await api('/api/logout', {}); audio.removeAttribute('src'); audio.load(); currentBook = null; index = -1; loadedStreamBook = null; showLogin(); }
     catch (e) { notice(e.message); }
 });
 $('library-btn').addEventListener('click', () => { $('settings-dialog').close(); $('library-dialog').showModal(); $('library-btn').setAttribute('aria-expanded', 'true'); });

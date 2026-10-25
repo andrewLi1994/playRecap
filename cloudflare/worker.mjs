@@ -37,8 +37,21 @@ async function objects(bucket) {
  }while(cursor);
  return result;
 }
+async function streamCatalog(bucket) {
+ try {
+  const object=await bucket.get('stream/catalog.json');
+  if(!object)return new Map();
+  const data=await object.json();
+  const entries=new Map();
+  for(const entry of Array.isArray(data?.books)?data.books:[]) {
+   if(typeof entry?.title!=='string'||!/^[a-f0-9]{24}$/.test(entry.streamId)||!Array.isArray(entry.chapters))continue;
+   entries.set(entry.title,entry);
+  }
+  return entries;
+ }catch{return new Map();}
+}
 async function catalog(bucket) {
- const groups=new Map();
+ const groups=new Map(),streams=await streamCatalog(bucket);
  for(const object of await objects(bucket)) {
   const meta=object.customMetadata;
   if(!meta?.book || !meta?.filename)continue;
@@ -51,9 +64,40 @@ async function catalog(bucket) {
  const books=[...groups.values()].sort((a,b)=>a.title.localeCompare(b.title,'zh-CN',{numeric:true}));
  for(const book of books) {
   book.chapters.sort((a,b)=>a.filename.localeCompare(b.filename,'zh-CN',{numeric:true}));
+  const stream=streams.get(book.title),timings=new Map(stream?.chapters?.map(chapter=>[chapter.id,chapter]));
+  const valid=stream&&book.chapters.every(chapter=>{
+   const timing=timings.get(chapter.id);
+   return timing&&Number.isFinite(timing.start)&&timing.start>=0&&Number.isFinite(timing.duration)&&timing.duration>0;
+  });
+  if(valid) {
+   book.streamUrl=`/stream/${stream.streamId}/index.m3u8`;
+   for(const chapter of book.chapters) {
+    const timing=timings.get(chapter.id);chapter.start=timing.start;chapter.duration=timing.duration;
+   }
+  }
   for(const chapter of book.chapters)delete chapter.filename;
  }
  return {books};
+}
+async function serveObject(bucket,key,request,contentType,cacheControl='private, no-store') {
+ const metadata=await bucket.head(key);
+ if(!metadata)return json({error:'文件不存在。'},404);
+ const size=metadata.size,range=request.headers.get('Range');let start=0,end=size-1,status=200;
+ const invalid=()=>json({},416,{'Content-Range':`bytes */${size}`});
+ if(range) {
+  const match=range.match(/^bytes=(\d*)-(\d*)$/);
+  if(!match||(!match[1]&&!match[2]))return invalid();
+  if(!match[1]){const count=Number(match[2]);if(count<=0)return invalid();start=Math.max(0,size-count);}
+  else {start=Number(match[1]);if(match[2])end=Math.min(Number(match[2]),size-1);}
+  if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start>=size||end<start)return invalid();
+  status=206;
+ }
+ const headers={...security,'Content-Type':contentType||metadata.httpMetadata?.contentType||'application/octet-stream','Content-Length':String(end-start+1),'Accept-Ranges':'bytes','Cache-Control':cacheControl};
+ if(status===206)headers['Content-Range']=`bytes ${start}-${end}/${size}`;
+ if(request.method==='HEAD')return new Response(null,{status,headers});
+ const object=await bucket.get(key,{range:{offset:start,length:end-start+1}});
+ if(!object)return json({error:'文件不存在。'},404);
+ return new Response(object.body,{status,headers});
 }
 async function route(request,env) {
  const url=new URL(request.url),pathname=url.pathname;
@@ -98,25 +142,22 @@ async function route(request,env) {
   const created=await env.AUDIO.put('audio/'+id,request.body,{onlyIf:new Headers({'If-None-Match':'*'}),httpMetadata:{contentType:MIME[extension]},customMetadata:{book,filename}});
   return created?json({ok:true},201):json({error:'同名章节已存在，未覆盖原文件。'},409);
  }
+ if(pathname==='/api/stream-upload' && request.method==='POST') {
+  const path=request.headers.get('X-Stream-Path')||'';
+  if(!/^stream\/(?:catalog\.json|[a-f0-9]{24}\/(?:index\.m3u8|seg-\d{5}\.aac))$/.test(path))return json({error:'连续音频路径无效。'},400);
+  const size=Number(request.headers.get('Content-Length'));
+  if(!Number.isSafeInteger(size)||size<=0||size>MAX_FILE)return json({error:'连续音频文件需小于 80 MB。'},413);
+  const contentType=path.endsWith('.json')?'application/json':path.endsWith('.m3u8')?'application/vnd.apple.mpegurl':'audio/aac';
+  await env.AUDIO.put(path,request.body,{httpMetadata:{contentType}});
+  return json({ok:true},201);
+ }
  if(/^\/media\/[a-f0-9]{24}$/.test(pathname)&&['GET','HEAD'].includes(request.method)) {
-  const key='audio/'+pathname.slice(7),metadata=await env.AUDIO.head(key);
-  if(!metadata)return json({error:'文件不存在。'},404);
-  const size=metadata.size,range=request.headers.get('Range');let start=0,end=size-1,status=200;
-  const invalid=()=>json({},416,{'Content-Range':`bytes */${size}`});
-  if(range) {
-   const match=range.match(/^bytes=(\d*)-(\d*)$/);
-   if(!match||(!match[1]&&!match[2]))return invalid();
-   if(!match[1]){const count=Number(match[2]);if(count<=0)return invalid();start=Math.max(0,size-count);}
-   else {start=Number(match[1]);if(match[2])end=Math.min(Number(match[2]),size-1);}
-   if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start>=size||end<start)return invalid();
-   status=206;
-  }
-  const headers={...security,'Content-Type':metadata.httpMetadata?.contentType||'application/octet-stream','Content-Length':String(end-start+1),'Accept-Ranges':'bytes','Cache-Control':'private, no-store'};
-  if(status===206)headers['Content-Range']=`bytes ${start}-${end}/${size}`;
-  if(request.method==='HEAD')return new Response(null,{status,headers});
-  const object=await env.AUDIO.get(key,{range:{offset:start,length:end-start+1}});
-  if(!object)return json({error:'文件不存在。'},404);
-  return new Response(object.body,{status,headers});
+  return serveObject(env.AUDIO,'audio/'+pathname.slice(7),request);
+ }
+ const streamMatch=pathname.match(/^\/stream\/([a-f0-9]{24})\/(index\.m3u8|seg-\d{5}\.aac)$/);
+ if(streamMatch&&['GET','HEAD'].includes(request.method)) {
+  const contentType=streamMatch[2].endsWith('.m3u8')?'application/vnd.apple.mpegurl':'audio/aac';
+  return serveObject(env.AUDIO,`stream/${streamMatch[1]}/${streamMatch[2]}`,request,contentType,streamMatch[2].endsWith('.aac')?'private, max-age=31536000, immutable':'private, no-store');
  }
  return json({error:'接口不存在。'},404);
 }
