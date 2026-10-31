@@ -1,0 +1,6 @@
+.git
+legacy
+data
+library
+__pycache__
+*.log

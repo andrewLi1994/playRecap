@@ -1,127 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-
+<!doctype html>
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sleep Audio Player</title>
-    <link rel="stylesheet" href="styles.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#121512"><title>playRecap · 私人听书</title>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="私人听书"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="/styles.css">
+<script src="/script.js" defer></script>
 </head>
-
 <body>
-    <div class="container">
-        <!-- Player Container -->
-        <div class="video-wrapper">
-            <div id="player"></div>
-        </div>
 
-        <!-- Controls / Info -->
-        <div class="controls">
-            <h2 id="video-title">Loading...</h2>
-            <div class="status-indicator">
-                <span id="status-text">Ready</span>
-            </div>
+<main>
+<section id="login" class="login panel" hidden>
+<h1>私人书库</h1>
+<form id="login-form"><label for="code">访问口令</label><input id="code" type="password" autocomplete="current-password" required><button class="primary" type="submit">进入书库 →</button></form>
+<p id="login-status" role="status" class="muted"></p>
+</section>
+<div id="app" hidden>
 
-            <div class="playback-controls">
-                <button id="prev-btn" class="control-btn">⏮</button>
-                <button id="play-pause-btn" class="control-btn">▶</button>
-                <button id="next-btn" class="control-btn">⏭</button>
-            </div>
+<div class="listening-room panel">
+<section class="player" aria-label="音频播放器">
 
-            <button id="playlist-toggle-btn" class="playlist-btn">📑 Playlist</button>
+<div class="now-heading"><h2 id="chapter-title">暂无音频</h2><button id="settings-btn" class="text-btn" aria-label="更多选项" aria-haspopup="dialog" aria-controls="settings-dialog">•••</button></div><p id="status" role="status" class="muted"></p>
+<audio id="audio" preload="metadata" playsinline></audio>
+<div class="timeline"><label class="sr-only" for="seek">播放进度</label><input type="range" id="seek" min="0" max="100" value="0" step="0.1" disabled><div><span id="elapsed">0:00</span><span id="seek-feedback" role="status" aria-live="polite" aria-atomic="true"></span><span id="duration">0:00</span></div></div>
+<div class="transport"><button id="back" aria-label="后退 15 秒" disabled><span class="control-glyph" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><path d="M8 7a12 12 0 1 1-4 9M8 2v6H2"/><text x="16" y="20">15</text></svg></span></button><button id="play" class="play" aria-label="播放" disabled><span id="play-icon" class="control-glyph" aria-hidden="true"><svg class="play-symbol" viewBox="0 0 24 24" focusable="false"><path d="M8 5 20 12 8 19Z"/></svg><svg class="pause-symbol" viewBox="0 0 24 24" focusable="false"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg></span></button><button id="forward" aria-label="前进 15 秒" disabled><span class="control-glyph" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><path d="M8 7a12 12 0 1 1-4 9M8 2v6H2" transform="translate(32 0) scale(-1 1)"/><text x="16" y="20">15</text></svg></span></button></div>
+<p id="timer-status" class="fine" role="status"></p>
+</section>
+<section id="chapters-panel" hidden><div class="section-heading"><div><h2 id="book-title">章节</h2><span id="chapter-count" class="fine"></span></div><button id="current-chapter" class="text-btn" aria-label="定位正在听的章节">正在听</button></div><ol id="chapters"></ol></section>
+</div>
 
-            <div class="info-log">
-                <p id="save-status">Last saved: Never</p>
-            </div>
-        </div>
-
-        <div id="empty-state-container" class="empty-state-card" style="display: none;">
-            <div class="empty-icon">📚</div>
-            <h2>Welcome</h2>
-            <p>Your library is empty. Add a YouTube playlist to start listening.</p>
-            <button id="empty-add-btn" class="ios-action-btn large">Add First Book</button>
-        </div>
-
-        <!-- iOS-style Bottom Sheet -->
-        <div id="sheet-backdrop" class="sheet-backdrop"></div>
-        <div id="settings-sheet" class="sheet">
-            <div class="sheet-handle"></div>
-
-            <!-- Tabs -->
-            <div class="sheet-tabs">
-                <button class="sheet-tab active" data-tab="library">My Library</button>
-                <button class="sheet-tab" data-tab="timer">Sleep Timer</button>
-            </div>
-
-            <!-- Tab: Library -->
-            <div class="sheet-body" id="tab-library">
-                <div id="library-list" class="ios-list">
-                    <!-- Injected by JS -->
-                </div>
-
-                <div class="ios-section-header">Add New Book</div>
-                <div class="ios-list">
-                    <div class="ios-input-row">
-                        <input type="url" id="playlist-input" placeholder="Paste YouTube Playlist URL">
-                    </div>
-                    <div class="ios-input-row">
-                        <input type="text" id="playlist-name-input" placeholder="Book Name">
-                        <button id="add-playlist-btn" class="ios-action-btn">Add</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tab: Timer -->
-            <div class="sheet-body hidden" id="tab-timer">
-                <div class="ios-section-header">Auto Pause</div>
-                <div class="ios-list">
-                    <button class="ios-list-item timer-btn" data-time="15">
-                        <span>15 Minutes</span><span class="checkmark"></span>
-                    </button>
-                    <button class="ios-list-item timer-btn" data-time="30">
-                        <span>30 Minutes</span><span class="checkmark"></span>
-                    </button>
-                    <button class="ios-list-item timer-btn" data-time="45">
-                        <span>45 Minutes</span><span class="checkmark"></span>
-                    </button>
-                    <button class="ios-list-item timer-btn" data-time="60">
-                        <span>1 Hour</span><span class="checkmark"></span>
-                    </button>
-                    <button class="ios-list-item timer-btn" data-time="90">
-                        <span>1.5 Hours</span><span class="checkmark"></span>
-                    </button>
-                    <button class="ios-list-item timer-btn" data-time="0">
-                        <span>Off</span><span class="checkmark"></span>
-                    </button>
-                </div>
-                <p id="timer-status" class="timer-status-text">Timer: Off</p>
-            </div>
-        </div>
-
-        <!-- Float Button for Settings -->
-        <button id="settings-toggle-btn" class="float-btn">📚</button>
-
-        <!-- Playlist Drawer -->
-        <div id="playlist-drawer" class="playlist-drawer">
-            <div class="drawer-header">
-                <h2>Episodes</h2>
-                <button id="close-drawer-btn">✕</button>
-            </div>
-            <div id="playlist-items" class="playlist-items">
-                <!-- Items injected via JS -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Silent Audio Hack for iOS Background Play -->
-    <!-- 1 second of silence -->
-    <audio id="ios-silent-player" loop playsinline preload="auto" style="display:none;">
-        <source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"
-            type="audio/wav">
-    </audio>
-
-    <script src="script.js"></script>
-    <script src="https://www.youtube.com/iframe_api"></script>
-</body>
-
-</html>
+</div>
+<p id="notice" role="status" class="notice" hidden></p>
+</main>
+<dialog id="library-dialog" aria-labelledby="library-heading"><div class="section-heading"><h2 id="library-heading">私人书库</h2><button id="close-library" type="button" aria-label="关闭书库">✕</button></div><div class="section-heading"><h2>我的书架</h2><button id="refresh" class="text-btn">刷新</button></div><div id="books"></div><div id="empty" class="empty"><h3>暂无音频</h3><button id="empty-add" class="text-btn">导入音频</button></div><footer><button id="logout" class="text-btn">锁定书库</button></footer></dialog>
+<dialog id="settings-dialog" aria-labelledby="settings-heading"><div class="section-heading"><h2 id="settings-heading">更多</h2><button id="close-settings" type="button" aria-label="关闭更多选项">✕</button></div><div class="options"><label>倍速<select id="speed" aria-label="倍速"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label><label>睡眠定时<select id="timer" aria-label="睡眠定时"><option value="0">关闭</option><option value="15">15 分钟</option><option value="30">30 分钟</option><option value="45">45 分钟</option><option value="60">60 分钟</option><option value="chapter">本章结束</option></select></label></div>
+<div class="chapter-actions"><button id="prev" disabled>上一章</button><button id="next" disabled>下一章</button></div><div class="library-actions"><button id="library-btn" aria-haspopup="dialog" aria-controls="library-dialog" aria-expanded="false">书库 <span aria-hidden="true">›</span></button><button id="add-btn" aria-haspopup="dialog" aria-controls="import-dialog">导入音频 <span aria-hidden="true">＋</span></button></div></dialog>
+<dialog id="import-dialog" aria-labelledby="import-heading"><form id="import-form"><div class="section-heading"><h2 id="import-heading">导入音频</h2><button id="close-import" type="button" aria-label="关闭">✕</button></div><label for="book-name">书名</label><input id="book-name" maxlength="70" placeholder="例如：睡前故事" required><label for="files">章节音频</label><input id="files" type="file" accept="audio/*,.m4a,.mp4" multiple required><p id="file-list" class="fine">MP3 / M4A · 按文件名排序</p><progress id="upload-progress" max="100" value="0" hidden></progress><p id="upload-status" role="status" class="muted"></p><button id="upload-btn" type="submit" class="primary">导入书库</button></form></dialog>
+</body></html>
